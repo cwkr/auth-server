@@ -19,5 +19,6 @@ require (
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/sijms/go-ora/v2 v2.8.24 // indirect
 	golang.org/x/text v0.24.0 // indirect
 )
