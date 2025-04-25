@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/cwkr/authd/internal/httputil"
 	"github.com/cwkr/authd/internal/oauth2"
 	"github.com/cwkr/authd/internal/people"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const ErrorAccessDenied = "access_denied"
@@ -18,6 +20,7 @@ const ErrorAccessDenied = "access_denied"
 type peopleAPIHandler struct {
 	peopleStore    people.Store
 	customVersions map[string]map[string]string
+	expires        int
 }
 
 func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -51,12 +54,16 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		httputil.NoCache(w)
+		if p.expires > 0 {
+			httputil.Cache(w, time.Duration(p.expires)*time.Second)
+		} else {
+			httputil.NoCache(w)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Write(bytes)
 	} else {
-		if err == people.ErrPersonNotFound {
+		if errors.Is(err, people.ErrPersonNotFound) {
 			oauth2.Error(w, oauth2.ErrorNotFound, err.Error(), http.StatusNotFound)
 		} else {
 			oauth2.Error(w, oauth2.ErrorInternal, err.Error(), http.StatusInternalServerError)
@@ -64,10 +71,11 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LookupPersonHandler(peopleStore people.Store, customVersions map[string]map[string]string) http.Handler {
+func LookupPersonHandler(peopleStore people.Store, customVersions map[string]map[string]string, exp int) http.Handler {
 	return &peopleAPIHandler{
 		peopleStore:    peopleStore,
 		customVersions: customVersions,
+		expires:        exp,
 	}
 }
 

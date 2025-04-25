@@ -287,6 +287,8 @@ func main() {
 		Methods(http.MethodGet)
 	router.Handle(basePath+"/scripts/main.js", server.MainScriptHandler()).
 		Methods(http.MethodGet)
+	router.Handle(basePath+"/scripts/user-details.js", server.UserDetailsTagScriptHandler(serverSettings.Issuer, basePath)).
+		Methods(http.MethodGet)
 	router.Handle("/favicon.ico", server.FaviconHandler()).
 		Methods(http.MethodGet)
 	router.Handle(basePath+"/favicon-16x16.png", server.Favicon16x16Handler()).
@@ -316,7 +318,8 @@ func main() {
 		Methods(http.MethodPost, http.MethodOptions)
 
 	if !serverSettings.DisableAPI {
-		var lookupPersonHandler = server.LookupPersonHandler(peopleStore, serverSettings.PeopleAPICustomVersions)
+		var lookupPersonHandler = server.LookupPersonHandler(peopleStore,
+			serverSettings.PeopleAPICustomVersions, serverSettings.PeopleAPIExpires)
 		if serverSettings.PeopleAPIRequireAuthN {
 			lookupPersonHandler = middleware.RequireJWT(lookupPersonHandler, accessTokenValidator)
 		}

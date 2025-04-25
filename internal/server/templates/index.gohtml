@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="{{ .base_path }}/favicon-16x16.png" sizes="16x16">
     <link rel="icon" type="image/png" href="{{ .base_path }}/favicon-32x32.png" sizes="32x32">
     <script src="{{ .base_path }}/scripts/main.js" type="module"></script>
+    <script src="{{ .base_path }}/scripts/user-details.js" type="module"></script>
 </head>
 <body>
 <h1>{{ .title }}</h1>
@@ -37,7 +38,7 @@
         {{- range .active_sessions }}
         <tr>
             <td>{{ .ClientID }}</td>
-            <td>{{ .UserID }}</td>
+            <td><user-details>{{ .UserID }}</user-details></td>
             <td>
                 <button type="submit" name="client_id" value="{{ .ClientID }}">Logout</button>
             </td>
