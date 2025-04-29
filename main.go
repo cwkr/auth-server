@@ -208,6 +208,7 @@ func main() {
 		int64(serverSettings.IDTokenTTL),
 		serverSettings.AccessTokenExtraClaims,
 		serverSettings.IDTokenExtraClaims,
+		serverSettings.Roles,
 	)
 	if err != nil {
 		log.Fatalf("!!! %s", err)
@@ -312,7 +313,7 @@ func main() {
 		Methods(http.MethodGet)
 	router.Handle(basePath+"/.well-known/openid-configuration", oauth2.DiscoveryDocumentHandler(serverSettings.Issuer, scope)).
 		Methods(http.MethodGet, http.MethodOptions)
-	router.Handle(basePath+"/userinfo", middleware.RequireJWT(oauth2.UserInfoHandler(peopleStore, serverSettings.AccessTokenExtraClaims), tokenVerifier)).
+	router.Handle(basePath+"/userinfo", middleware.RequireJWT(oauth2.UserInfoHandler(peopleStore, serverSettings.IDTokenExtraClaims, serverSettings.Roles), tokenVerifier)).
 		Methods(http.MethodGet, http.MethodOptions)
 
 	router.Handle(basePath+"/revoke", oauth2.RevokeHandler(tokenCreator, clientStore, trlStore)).
@@ -320,7 +321,7 @@ func main() {
 
 	if !serverSettings.DisableAPI {
 		var lookupPersonHandler = server.LookupPersonHandler(peopleStore,
-			serverSettings.PeopleAPICustomVersions, serverSettings.PeopleAPIExpires)
+			serverSettings.PeopleAPICustomVersions, serverSettings.Roles, serverSettings.PeopleAPIExpires)
 		if serverSettings.PeopleAPIRequireAuthN {
 			lookupPersonHandler = middleware.RequireJWT(lookupPersonHandler, tokenVerifier)
 		}

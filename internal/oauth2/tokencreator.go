@@ -67,6 +67,7 @@ type tokenCreator struct {
 	idTokenTTL             int64
 	accessTokenExtraClaims map[string]string
 	idTokenExtraClaims     map[string]string
+	roleMappings           RoleMappings
 }
 
 func (t tokenCreator) AccessTokenTTL() int64 {
@@ -94,7 +95,7 @@ func (t tokenCreator) GenerateAccessToken(user User, subject, clientID, scope st
 		claims[ClaimScope] = scope
 	}
 
-	AddExtraClaims(claims, t.accessTokenExtraClaims, user, clientID)
+	AddExtraClaims(claims, t.accessTokenExtraClaims, user, clientID, t.roleMappings)
 
 	return jwt.Signed(t.signer).Claims(claims).CompactSerialize()
 }
@@ -126,7 +127,7 @@ func (t tokenCreator) GenerateIDToken(user User, clientID, scope, accessTokenHas
 	if strings.Contains(scope, "address") {
 		AddAddressClaims(claims, user)
 	}
-	AddExtraClaims(claims, t.idTokenExtraClaims, user, clientID)
+	AddExtraClaims(claims, t.idTokenExtraClaims, user, clientID, t.roleMappings)
 
 	return jwt.Signed(t.signer).Claims(claims).CompactSerialize()
 }
@@ -210,7 +211,8 @@ func (t tokenCreator) Verify(rawToken, tokenType string) (*VerifiedClaims, error
 
 func NewTokenCreator(privateKey *rsa.PrivateKey, keyID, issuer, scope string,
 	accessTokenTTL, refreshTokenTTL, idTokenTTL int64,
-	accessTokenExtraClaims, idTokenExtraClaims map[string]string) (TokenCreator, error) {
+	accessTokenExtraClaims, idTokenExtraClaims map[string]string,
+	roleMappings RoleMappings) (TokenCreator, error) {
 	var signer, err = jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: privateKey}, (&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", keyID))
 	if err != nil {
 		return nil, err
@@ -225,5 +227,6 @@ func NewTokenCreator(privateKey *rsa.PrivateKey, keyID, issuer, scope string,
 		idTokenTTL:             idTokenTTL,
 		accessTokenExtraClaims: accessTokenExtraClaims,
 		idTokenExtraClaims:     idTokenExtraClaims,
+		roleMappings:           roleMappings,
 	}, nil
 }

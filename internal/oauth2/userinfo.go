@@ -9,8 +9,9 @@ import (
 )
 
 type userInfoHandler struct {
-	peopleStore people.Store
-	extraClaims map[string]string
+	peopleStore  people.Store
+	extraClaims  map[string]string
+	roleMappings RoleMappings
 }
 
 func (u *userInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +38,7 @@ func (u *userInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		AddEmailClaims(claims, user)
 		AddPhoneClaims(claims, user)
 		AddAddressClaims(claims, user)
-		AddExtraClaims(claims, u.extraClaims, user, "")
+		AddExtraClaims(claims, u.extraClaims, user, "", u.roleMappings)
 
 		var bytes, err = json.Marshal(claims)
 		if err != nil {
@@ -53,9 +54,10 @@ func (u *userInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func UserInfoHandler(peopleStore people.Store, extraClaims map[string]string) http.Handler {
+func UserInfoHandler(peopleStore people.Store, extraClaims map[string]string, roleMappings RoleMappings) http.Handler {
 	return &userInfoHandler{
-		peopleStore: peopleStore,
-		extraClaims: extraClaims,
+		peopleStore:  peopleStore,
+		extraClaims:  extraClaims,
+		roleMappings: roleMappings,
 	}
 }

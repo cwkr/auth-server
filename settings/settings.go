@@ -42,6 +42,7 @@ type Server struct {
 	LoginTemplate           string                            `json:"login_template,omitempty"`
 	LogoutTemplate          string                            `json:"logout_template,omitempty"`
 	TRLStore                *trl.StoreSettings                `json:"trl_store,omitempty"`
+	Roles                   oauth2.RoleMappings               `json:"roles,omitempty"`
 	rsaSigningKey           *rsa.PrivateKey
 	rsaSigningKeyID         string
 	additionalPublicKeys    map[string]any
