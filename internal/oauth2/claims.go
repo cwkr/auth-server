@@ -21,12 +21,14 @@ const (
 	ClaimTokenID         = "jti"
 )
 
-func AddExtraClaims(claims map[string]any, extraClaims map[string]string, user User, clientID string) {
+func AddExtraClaims(claims map[string]any, extraClaims map[string]string, user User, clientID string, roleMappings RoleMappings) {
 	for key, tmpl := range extraClaims {
 		if strings.EqualFold(strings.TrimSpace(tmpl), "$groups") {
 			if len(user.Groups) > 0 {
 				claims[key] = user.Groups
 			}
+		} else if strings.EqualFold(strings.TrimSpace(tmpl), "$roles") {
+			claims[key] = roleMappings.Roles(user)
 		} else if value := strings.TrimSpace(os.Expand(tmpl, func(name string) string {
 			switch strings.ToLower(name) {
 			case "birthdate":
@@ -53,6 +55,12 @@ func AddExtraClaims(claims map[string]any, extraClaims map[string]string, user U
 				return strings.Join(user.Groups, ",")
 			case "groups_semicolon_delimited":
 				return strings.Join(user.Groups, ";")
+			case "roles_space_delimited":
+				return strings.Join(roleMappings.Roles(user), " ")
+			case "roles_comma_delimited":
+				return strings.Join(roleMappings.Roles(user), ",")
+			case "roles_semicolon_delimited":
+				return strings.Join(roleMappings.Roles(user), ";")
 			case "street_address":
 				return user.StreetAddress
 			case "user_id":

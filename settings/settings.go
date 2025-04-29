@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/cwkr/authd/internal/oauth2"
 	"github.com/cwkr/authd/internal/oauth2/clients"
 	"github.com/cwkr/authd/internal/oauth2/keyset"
 	"github.com/cwkr/authd/internal/oauth2/trl"
@@ -43,6 +44,7 @@ type Server struct {
 	LogoutTemplate          string                            `json:"logout_template,omitempty"`
 	TRLStore                *trl.StoreSettings                `json:"trl_store,omitempty"`
 	KeysTTL                 int                               `json:"keys_ttl,omitempty"`
+	Roles                   oauth2.RoleMappings               `json:"roles,omitempty"`
 	rsaSigningKey           *rsa.PrivateKey
 	rsaSigningKeyID         string
 	keySetProvider          keyset.Provider

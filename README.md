@@ -1,14 +1,22 @@
-# Auth Server
+# Auth Development Tools
+
+## Auth Server
 
 This is a simple OAuth2 authorization server implementation supporting *Implicit*,
 *Authorization Code* (with and without *PKCE*), *Refresh Token*, *Password* and
 *Client Credentials* grant types.
 
-It is possible to use a PostgreSQL database or LDAP as people store.
+It is possible to use PostgreSQL, Oracle Database or LDAP as people store.
 
-## Settings
+### Install
 
-### PostgreSQL as people store
+```shell
+go install github.com/cwkr/authd/cmd/auth-server@latest
+```
+
+### Settings
+
+#### PostgreSQL as people store
 
 ```jsonc
 {
@@ -60,6 +68,7 @@ It is possible to use a PostgreSQL database or LDAP as people store.
   "session_secret": "AwBVrwW0boviWc3L12PplWTEgO4B4dxi",
   "session_name": "_auth",
   "session_ttl": 28800,
+  "keys_ttl": 900,
   "people_store": {
     "uri": "postgresql://authserver:trustno1@localhost/dev?sslmode=disable",
     "credentials_query": "SELECT user_id, password_hash FROM users WHERE lower(user_id) = lower($1)",
@@ -68,11 +77,25 @@ It is possible to use a PostgreSQL database or LDAP as people store.
     "update": "UPDATE people SET given_name = $2, family_name = $3, email = $4, department = $5, birthdate = TO_DATE($6, 'YYYY-MM-DD'), phone_number = $7, locality = $8, street_address = $9, postal_code = $10, last_modified = now() WHERE lower(user_id) = lower($1)",
     "set_password": "UPDATE people SET password_hash = $2, last_modified = now() WHERE lower(user_id) = lower($1)"
   },
-  "disable_api": false
+  "disable_api": false,
+  "roles": {
+    "*": {
+      "by_group": ["*"]
+    },
+    "all_users": {
+      "by_group": ["*"]
+    },
+    "admin": {
+      "by_user_id": [
+        "user1",
+        "user2"
+      ]
+    }
+  }
 }
 ```
 
-### Oracle Internt Directory (LDAP) as people store
+#### Oracle Internt Directory (LDAP) as people store
 
 ```jsonc
 {
@@ -99,6 +122,7 @@ It is possible to use a PostgreSQL database or LDAP as people store.
   "session_secret": "j2mejSKidaFJ38wjxaf2amQRmZ4Mtibp",
   "session_name": "_auth",
   "session_ttl": 28800,
+  "keys_ttl": 900,
   "people_store": {
     "uri": "ldaps://cn=access_user,cn=Users,dc=example,dc=org:trustno1@oid.example.org:3070",
     "credentials_query": "(&(objectClass=person)(uid=%s))",

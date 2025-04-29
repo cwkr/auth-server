@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/cwkr/authd/internal/httputil"
 	"github.com/cwkr/authd/internal/oauth2"
 	"github.com/cwkr/authd/internal/people"
@@ -18,6 +19,7 @@ const ErrorAccessDenied = "access_denied"
 type peopleAPIHandler struct {
 	peopleStore    people.Store
 	customVersions map[string]map[string]string
+	roleMappings   oauth2.RoleMappings
 }
 
 func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +40,7 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var err error
 		if customVersion, found := p.customVersions[pathVars["version"]]; found {
 			var claims = make(map[string]any)
-			oauth2.AddExtraClaims(claims, customVersion, oauth2.User{UserID: userID, Person: *person}, "")
+			oauth2.AddExtraClaims(claims, customVersion, oauth2.User{UserID: userID, Person: *person}, "", p.roleMappings)
 			bytes, err = json.Marshal(claims)
 		} else if pathVars["version"] == "v1" {
 			bytes, err = json.Marshal(person)
@@ -56,7 +58,7 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Write(bytes)
 	} else {
-		if err == people.ErrPersonNotFound {
+		if errors.Is(err, people.ErrPersonNotFound) {
 			oauth2.Error(w, oauth2.ErrorNotFound, err.Error(), http.StatusNotFound)
 		} else {
 			oauth2.Error(w, oauth2.ErrorInternal, err.Error(), http.StatusInternalServerError)
@@ -64,10 +66,11 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LookupPersonHandler(peopleStore people.Store, customVersions map[string]map[string]string) http.Handler {
+func LookupPersonHandler(peopleStore people.Store, customVersions map[string]map[string]string, roleMappings oauth2.RoleMappings) http.Handler {
 	return &peopleAPIHandler{
 		peopleStore:    peopleStore,
 		customVersions: customVersions,
+		roleMappings:   roleMappings,
 	}
 }
 
