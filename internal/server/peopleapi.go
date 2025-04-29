@@ -20,6 +20,7 @@ const ErrorAccessDenied = "access_denied"
 type peopleAPIHandler struct {
 	peopleStore    people.Store
 	customVersions map[string]map[string]string
+	roleMappings   oauth2.RoleMappings
 	expires        int
 }
 
@@ -41,7 +42,7 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var err error
 		if customVersion, found := p.customVersions[pathVars["version"]]; found {
 			var claims = make(map[string]any)
-			oauth2.AddExtraClaims(claims, customVersion, oauth2.User{UserID: userID, Person: *person}, "")
+			oauth2.AddExtraClaims(claims, customVersion, oauth2.User{UserID: userID, Person: *person}, "", p.roleMappings)
 			bytes, err = json.Marshal(claims)
 		} else if pathVars["version"] == "v1" {
 			bytes, err = json.Marshal(person)
@@ -71,10 +72,11 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LookupPersonHandler(peopleStore people.Store, customVersions map[string]map[string]string, exp int) http.Handler {
+func LookupPersonHandler(peopleStore people.Store, customVersions map[string]map[string]string, roleMappings oauth2.RoleMappings, exp int) http.Handler {
 	return &peopleAPIHandler{
 		peopleStore:    peopleStore,
 		customVersions: customVersions,
+		roleMappings:   roleMappings,
 		expires:        exp,
 	}
 }
