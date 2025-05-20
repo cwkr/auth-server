@@ -284,8 +284,6 @@ func main() {
 		Methods(http.MethodGet)
 	router.Handle(basePath+"/style.css", server.StyleHandler()).
 		Methods(http.MethodGet)
-	router.Handle(basePath+"/scripts/jwt.js", server.JwtScriptHandler()).
-		Methods(http.MethodGet)
 	router.Handle(basePath+"/scripts/main.js", server.MainScriptHandler()).
 		Methods(http.MethodGet)
 	router.Handle("/favicon.ico", server.FaviconHandler()).

@@ -1,4 +1,7 @@
-import * as jwt from './jwt.js';
+export function decodeJwt(rawToken) {
+    const base64 = rawToken.split('.')?.[1]?.replace('-', '+')?.replace('_', '/');
+    return JSON.parse(atob(base64));
+}
 
 function rememberRequestForm() {
     const clientId = document.getElementById("client_id").value;
@@ -61,7 +64,7 @@ function getToken(params) {
         .then(data => {
             if (data.access_token) {
                 document.getElementById("access_token_output").textContent = data.access_token;
-                document.getElementById("access_token_json").textContent = JSON.stringify(jwt.decode(data.access_token), null, 2);
+                document.getElementById("access_token_json").textContent = JSON.stringify(decodeJwt(data.access_token), null, 2);
                 document.getElementById("access_token_panel").style.display = 'block';
                 document.getElementById("refresh_token_panel").style.display = 'none';
                 document.getElementById("id_token_panel").style.display = 'none';
@@ -142,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (urlParams.has("access_token") === true) {
         const accessToken = urlParams.get("access_token");
         document.getElementById("access_token_output").textContent = accessToken;
-        document.getElementById("access_token_json").textContent = JSON.stringify(jwt.decode(accessToken), null, 2);
+        document.getElementById("access_token_json").textContent = JSON.stringify(decodeJwt(accessToken), null, 2);
         document.getElementById("access_token_panel").style.display = 'block';
     } else if (urlParams.has("code") === true) {
         const postParams = new URLSearchParams({
@@ -161,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 if (data.access_token) {
                     document.getElementById("access_token_output").textContent = data.access_token;
-                    document.getElementById("access_token_json").textContent = JSON.stringify(jwt.decode(data.access_token), null, 2);
+                    document.getElementById("access_token_json").textContent = JSON.stringify(decodeJwt(data.access_token), null, 2);
                     document.getElementById("access_token_panel").style.display = 'block';
                 }
                 if (data.refresh_token) {
@@ -170,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (data.id_token) {
                     document.getElementById("id_token_output").textContent = data.id_token;
-                    document.getElementById("id_token_json").textContent = JSON.stringify(jwt.decode(data.id_token), null, 2);
+                    document.getElementById("id_token_json").textContent = JSON.stringify(decodeJwt(data.id_token), null, 2);
                     document.getElementById("id_token_panel").style.display = 'block';
                 }
             })
