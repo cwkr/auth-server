@@ -35,6 +35,7 @@ type indexHandler struct {
 type activeSession struct {
 	ClientID string
 	UserID   string
+	Verified bool
 }
 
 func (i *indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -46,9 +47,9 @@ func (i *indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if clientsPerSessionName, err := i.clientStore.PerSessionNameMap(i.serverSettings.SessionName); err == nil {
 		for sessionName, sessionClients := range clientsPerSessionName {
 			clientIDs = append(clientIDs, sessionClients...)
-			if uid, active := i.peopleStore.IsSessionActive(r, sessionName); active == true {
+			if uid, valid, verified := i.peopleStore.IsSessionActive(r, sessionName); valid == true {
 				for _, cid := range sessionClients {
-					activeSessions = append(activeSessions, activeSession{ClientID: cid, UserID: uid})
+					activeSessions = append(activeSessions, activeSession{cid, uid, verified})
 				}
 			}
 		}
