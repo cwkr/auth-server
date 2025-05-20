@@ -30,7 +30,9 @@
         <thead>
         <tr>
             <th>Client</th>
-            <th colspan="2">Username</th>
+            <th>User</th>
+            <th>Verified</th>
+            <th>&nbsp;</th>
         </tr>
         </thead>
         <tbody>
@@ -38,6 +40,7 @@
         <tr>
             <td>{{ .ClientID }}</td>
             <td>{{ .UserID }}</td>
+            <td>{{ if .Verified }}&check;{{ end }}</td>
             <td>
                 <button type="submit" name="client_id" value="{{ .ClientID }}">Logout</button>
             </td>
