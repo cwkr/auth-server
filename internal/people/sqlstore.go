@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/blockloop/scan/v2"
+	"github.com/cwkr/auth-server/internal/sqlutil"
 	"github.com/gorilla/sessions"
-	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"strings"
@@ -18,22 +18,19 @@ type sqlStore struct {
 }
 
 func NewSqlStore(sessionStore sessions.Store, users map[string]AuthenticPerson, sessionTTL int64, dbs map[string]*sql.DB, settings *StoreSettings) (Store, error) {
-	if dbs[settings.URI] == nil {
-		dbconn, err := sql.Open("postgres", settings.URI)
-		if err != nil {
-			return nil, err
-		}
-		dbs[settings.URI] = dbconn
+	if dbconn, err := sqlutil.GetDB(dbs, settings.URI); err != nil {
+		return nil, err
+	} else {
+		return &sqlStore{
+			embeddedStore: embeddedStore{
+				sessionStore: sessionStore,
+				users:        users,
+				sessionTTL:   sessionTTL,
+			},
+			dbconn:   dbconn,
+			settings: settings,
+		}, nil
 	}
-	return &sqlStore{
-		embeddedStore: embeddedStore{
-			sessionStore: sessionStore,
-			users:        users,
-			sessionTTL:   sessionTTL,
-		},
-		dbconn:   dbs[settings.URI],
-		settings: settings,
-	}, nil
 }
 
 func (p sqlStore) queryGroups(userID string) ([]string, error) {

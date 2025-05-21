@@ -13,6 +13,7 @@ import (
 	"github.com/cwkr/auth-server/internal/oauth2/trl"
 	"github.com/cwkr/auth-server/internal/people"
 	"github.com/cwkr/auth-server/internal/server"
+	"github.com/cwkr/auth-server/internal/sqlutil"
 	"github.com/cwkr/auth-server/middleware"
 	"github.com/cwkr/auth-server/settings"
 	"github.com/gorilla/mux"
@@ -238,7 +239,7 @@ func main() {
 	var users = maputil.LowerKeys(serverSettings.Users)
 
 	if serverSettings.PeopleStore != nil {
-		if strings.HasPrefix(serverSettings.PeopleStore.URI, "postgresql:") {
+		if sqlutil.IsDatabaseURI(serverSettings.PeopleStore.URI) {
 			if peopleStore, err = people.NewSqlStore(sessionStore, users, int64(serverSettings.SessionTTL), dbs, serverSettings.PeopleStore); err != nil {
 				log.Fatalf("!!! %s", err)
 			}
@@ -254,7 +255,7 @@ func main() {
 	}
 
 	if serverSettings.ClientStore != nil {
-		if strings.HasPrefix(serverSettings.ClientStore.URI, "postgresql:") {
+		if sqlutil.IsDatabaseURI(serverSettings.ClientStore.URI) {
 			if clientStore, err = clients.NewSqlStore(serverSettings.Clients, dbs, serverSettings.ClientStore); err != nil {
 				log.Fatalf("!!! %s", err)
 			}
@@ -266,7 +267,7 @@ func main() {
 	}
 
 	if serverSettings.TRLStore != nil {
-		if strings.HasPrefix(serverSettings.TRLStore.URI, "postgresql:") {
+		if sqlutil.IsDatabaseURI(serverSettings.TRLStore.URI) {
 			if trlStore, err = trl.NewSqlStore(dbs, serverSettings.TRLStore); err != nil {
 				log.Fatalf("!!! %s", err)
 			}

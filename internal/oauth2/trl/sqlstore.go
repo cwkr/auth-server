@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/blockloop/scan/v2"
+	"github.com/cwkr/auth-server/internal/sqlutil"
 	"log"
 	"time"
 )
@@ -14,17 +15,14 @@ type sqlStore struct {
 }
 
 func NewSqlStore(dbs map[string]*sql.DB, settings *StoreSettings) (Store, error) {
-	if dbs[settings.URI] == nil {
-		dbconn, err := sql.Open("postgres", settings.URI)
-		if err != nil {
-			return nil, err
-		}
-		dbs[settings.URI] = dbconn
+	if dbconn, err := sqlutil.GetDB(dbs, settings.URI); err != nil {
+		return nil, err
+	} else {
+		return &sqlStore{
+			dbconn:   dbconn,
+			settings: settings,
+		}, nil
 	}
-	return &sqlStore{
-		dbconn:   dbs[settings.URI],
-		settings: settings,
-	}, nil
 }
 
 func (s *sqlStore) Put(tokenID string, expirationTime time.Time) error {
