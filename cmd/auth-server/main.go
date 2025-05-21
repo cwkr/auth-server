@@ -11,6 +11,7 @@ import (
 	"github.com/cwkr/authd/internal/oauth2"
 	"github.com/cwkr/authd/internal/oauth2/clients"
 	"github.com/cwkr/authd/internal/oauth2/trl"
+	"github.com/cwkr/authd/internal/otpkey"
 	"github.com/cwkr/authd/internal/people"
 	"github.com/cwkr/authd/internal/server"
 	"github.com/cwkr/authd/internal/sqlutil"
@@ -19,6 +20,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/hjson/hjson-go/v4"
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -50,6 +52,7 @@ func main() {
 		setFamilyName        string
 		setEmail             string
 		setDepartment        string
+		generateTOTPKey      bool
 		keySize              int
 		keyID                string
 		saveSettings         bool
@@ -68,6 +71,7 @@ func main() {
 	flag.StringVar(&setFamilyName, "family-name", "", "set user family name")
 	flag.StringVar(&setEmail, "email", "", "set user email")
 	flag.StringVar(&setDepartment, "department", "", "set user department")
+	flag.BoolVar(&generateTOTPKey, "totp", false, "generate Time-based One-time Password (TOTP) key")
 	flag.IntVar(&keySize, "key-size", 2048, "generated signing key size")
 	flag.StringVar(&keyID, "key-id", "sigkey", "set generated signing key id")
 	flag.BoolVar(&saveSettings, "save", false, "save config and exit")
@@ -171,6 +175,25 @@ func main() {
 		}
 		if user.PasswordHash == "" {
 			log.Fatal("!!! missing password")
+		}
+		if generateTOTPKey {
+			var otpID = "auth-server"
+			if issuerURL, err := url.Parse(serverSettings.Issuer); err != nil {
+				log.Printf("!!! %s", err)
+			} else {
+				if issuerURL.Hostname() != "" && issuerURL.Hostname() != "localhost" {
+					otpID = issuerURL.Hostname()
+				}
+				if issuerURL.Path != "" && issuerURL.Path != "/" {
+					otpID += issuerURL.Path
+				}
+			}
+			log.Printf("Generating TOTP Key for %s@%s", setUserID, otpID)
+			if totpKey, err := totp.Generate(totp.GenerateOpts{Issuer: otpID, AccountName: setUserID}); err != nil {
+				log.Fatalf("!!! %s", err)
+			} else {
+				user.OTPKeyURI = totpKey.URL()
+			}
 		}
 		serverSettings.Users[setUserID] = user
 	}
@@ -278,6 +301,8 @@ func main() {
 		trlStore = trl.NewNoopStore()
 	}
 
+	var otpKeyStore = otpkey.NewEmbeddedStore(users)
+
 	var router = mux.NewRouter()
 
 	router.NotFoundHandler = htmlutil.NotFoundHandler(basePath)
@@ -293,7 +318,7 @@ func main() {
 		Methods(http.MethodGet)
 	router.Handle(basePath+"/favicon-32x32.png", server.Favicon32x32Handler()).
 		Methods(http.MethodGet)
-	router.Handle(basePath+"/login", server.LoginHandler(basePath, peopleStore, clientStore, serverSettings.Issuer, serverSettings.SessionName)).
+	router.Handle(basePath+"/login", server.LoginHandler(basePath, peopleStore, clientStore, otpKeyStore, serverSettings.Issuer, serverSettings.SessionName)).
 		Methods(http.MethodGet, http.MethodPost)
 	router.Handle(basePath+"/logout", server.LogoutHandler(basePath, serverSettings, sessionStore, clientStore))
 	router.Handle(basePath+"/health", server.HealthHandler(peopleStore)).
@@ -314,6 +339,9 @@ func main() {
 
 	router.Handle(basePath+"/revoke", oauth2.RevokeHandler(tokenCreator, clientStore, trlStore)).
 		Methods(http.MethodPost, http.MethodOptions)
+
+	router.Handle(basePath+"/otp", server.OTPHandler(peopleStore, clientStore, otpKeyStore, basePath, serverSettings.SessionName)).
+		Methods(http.MethodGet)
 
 	if !serverSettings.DisableAPI {
 		var lookupPersonHandler = server.LookupPersonHandler(peopleStore, serverSettings.PeopleAPICustomVersions)

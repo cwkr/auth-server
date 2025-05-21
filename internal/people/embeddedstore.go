@@ -12,6 +12,7 @@ import (
 type AuthenticPerson struct {
 	Person
 	PasswordHash string `json:"password_hash"`
+	OTPKeyURI    string `json:"otp_key_uri"`
 }
 
 type embeddedStore struct {
@@ -47,11 +48,11 @@ func (e embeddedStore) IsSessionActive(r *http.Request, sessionName string) (str
 	var session, _ = e.sessionStore.Get(r, sessionName)
 
 	var (
-		uid, sct, tfa, vfd = session.Values["uid"], session.Values["sct"], session.Values["2fa"], session.Values["vfd"]
+		uid, sct, otp, vfd = session.Values["uid"], session.Values["sct"], session.Values["otp"], session.Values["vfd"]
 		valid              = uid != nil && sct != nil && time.Unix(sct.(int64), 0).
 			Add(time.Duration(e.sessionTTL)*time.Second).
 			After(time.Now())
-		verified = tfa != nil && vfd != nil && (tfa.(bool) == false || vfd.(bool))
+		verified = otp != nil && vfd != nil && (otp.(bool) == false || vfd.(bool))
 	)
 
 	if valid {
@@ -61,12 +62,21 @@ func (e embeddedStore) IsSessionActive(r *http.Request, sessionName string) (str
 	return "", false, false
 }
 
-func (e embeddedStore) SaveSession(r *http.Request, w http.ResponseWriter, authTime time.Time, userID, sessionName string) error {
+func (e embeddedStore) SaveSession(r *http.Request, w http.ResponseWriter, authTime time.Time, userID, sessionName string, otp bool) error {
 	var session, _ = e.sessionStore.Get(r, sessionName)
 	session.Values["uid"] = userID
 	session.Values["sct"] = authTime.Unix()
-	session.Values["2fa"] = false
+	session.Values["otp"] = otp
 	session.Values["vfd"] = false
+	if err := session.Save(r, w); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e embeddedStore) VerifySession(r *http.Request, w http.ResponseWriter, userID, sessionName string) error {
+	var session, _ = e.sessionStore.Get(r, sessionName)
+	session.Values["vfd"] = true
 	if err := session.Save(r, w); err != nil {
 		return err
 	}
