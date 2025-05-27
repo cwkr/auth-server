@@ -6,4 +6,5 @@ type Client struct {
 	SessionName                string `json:"session_name,omitempty" db:"session_name"`
 	DisableImplicit            bool   `json:"disable_implicit,omitempty" db:"disable_implicit"`
 	EnableRefreshTokenRotation bool   `json:"enable_refresh_token_rotation,omitempty" db:"enable_refresh_token_rotation"`
+	DisableTOTP                bool   `json:"disable_totp,omitempty" db:"disable_totp"`
 }

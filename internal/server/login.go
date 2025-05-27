@@ -43,7 +43,7 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s", r.Method, r.URL)
 	var (
 		message, userID, password, clientID, sessionName, code string
-		activeSession, verifiedSession                         bool
+		activeSession, verifiedSession, totpEnabled            bool
 		otpKey                                                 *otpkey.OTPKey
 	)
 
@@ -58,6 +58,7 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if client.SessionName != "" {
 			sessionName = client.SessionName
 		}
+		totpEnabled = !client.DisableTOTP
 	} else {
 		htmlutil.Error(w, j.basePath, "invalid_client", http.StatusForbidden)
 		return
@@ -83,7 +84,7 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				message = "username and password must not be empty"
 			} else {
 				if realUserID, err := j.peopleStore.Authenticate(userID, password); err == nil {
-					var codeRequired = otpKey != nil
+					var codeRequired = otpKey != nil && totpEnabled
 					if err := j.peopleStore.SaveSession(r, w, time.Now(), realUserID, sessionName, codeRequired); err != nil {
 						htmlutil.Error(w, j.basePath, err.Error(), http.StatusInternalServerError)
 						return

@@ -1,11 +1,12 @@
 package otpkey
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
 	"image/png"
-	"io"
 	"log"
 	"time"
 )
@@ -29,19 +30,21 @@ func (k OTPKey) Verify(code string) bool {
 	}
 }
 
-func (k OTPKey) PNG(w io.Writer) error {
-	var img, err = k.key.Image(512, 512)
+func (k OTPKey) PNG() (string, error) {
+	var img, err = k.key.Image(400, 400)
 	if err != nil {
-		return err
+		return "", err
 	} else {
-		if err := png.Encode(w, img); err != nil {
-			return err
+		var buf bytes.Buffer
+		if err := png.Encode(&buf, img); err != nil {
+			return "", err
 		}
+		return "data:image/png;base64," + base64.RawStdEncoding.EncodeToString(buf.Bytes()), nil
 	}
-	return nil
 }
 
 type Store interface {
 	Lookup(userID string) (*OTPKey, error)
 	Ping() error
+	ReadOnly() bool
 }

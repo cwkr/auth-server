@@ -31,3 +31,7 @@ func (e embeddedStore) Lookup(userID string) (*OTPKey, error) {
 func (e embeddedStore) Ping() error {
 	return nil
 }
+
+func (e embeddedStore) ReadOnly() bool {
+	return true
+}

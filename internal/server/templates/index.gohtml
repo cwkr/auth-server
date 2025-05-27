@@ -40,7 +40,7 @@
         <tr>
             <td>{{ .ClientID }}</td>
             <td>{{ .UserID }}</td>
-            <td>{{ if .Verified }}&check;{{ end }}</td>
+            <td>{{ if .Verified }}&check;{{ else }}&times;{{ end }}</td>
             <td>
                 <button type="submit" name="client_id" value="{{ .ClientID }}">Logout</button>
             </td>
