@@ -1,0 +1,31 @@
+CREATE TABLE people (
+    user_id VARCHAR2(255 CHAR) NOT NULL CONSTRAINT people_pk PRIMARY KEY,
+    password_hash VARCHAR2(255 CHAR) NOT NULL,
+    given_name VARCHAR2(255 CHAR),
+    family_name VARCHAR2(255 CHAR),
+    email VARCHAR2(255 CHAR),
+    birthdate DATE,
+    department VARCHAR2(255 CHAR),
+    phone_number VARCHAR2(255 CHAR),
+    street_address VARCHAR2(255 CHAR),
+    locality VARCHAR2(255 CHAR),
+    postal_code VARCHAR2(255 CHAR),
+    created TIMESTAMP(3) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP(3) NOT NULL,
+    last_modified TIMESTAMP(3) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP(3) NOT NULL
+);
+
+CREATE TABLE groups (
+    group_id VARCHAR2(255 CHAR) NOT NULL CONSTRAINT group_pk PRIMARY KEY,
+    created TIMESTAMP(3) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP(3) NOT NULL,
+    last_modified TIMESTAMP(3) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP(3) NOT NULL
+);
+
+CREATE TABLE people_groups (
+    user_id VARCHAR2(255 CHAR) NOT NULL,
+    group_id VARCHAR2(255 CHAR) NOT NULL,
+    created TIMESTAMP(3) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP(3) NOT NULL,
+    last_modified TIMESTAMP(3) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP(3) NOT NULL,
+    CONSTRAINT people_groups_pk PRIMARY KEY (user_id, group_id),
+    CONSTRAINT people_groups_fk1 FOREIGN KEY (user_id) REFERENCES people (user_id),
+    CONSTRAINT people_groups_fk2 FOREIGN KEY (group_id) REFERENCES groups (group_id)
+);
