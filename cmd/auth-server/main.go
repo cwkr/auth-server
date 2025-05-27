@@ -20,7 +20,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/hjson/hjson-go/v4"
-	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -53,6 +52,7 @@ func main() {
 		setEmail             string
 		setDepartment        string
 		generateTOTPKey      bool
+		totpHashAlgorithm    string
 		keySize              int
 		keyID                string
 		saveSettings         bool
@@ -72,6 +72,7 @@ func main() {
 	flag.StringVar(&setEmail, "email", "", "set user email")
 	flag.StringVar(&setDepartment, "department", "", "set user department")
 	flag.BoolVar(&generateTOTPKey, "totp", false, "generate Time-based One-time Password (TOTP) key")
+	flag.StringVar(&totpHashAlgorithm, "totp-hash-algorithm", "sha1", "totp hash algorithm")
 	flag.IntVar(&keySize, "key-size", 2048, "generated signing key size")
 	flag.StringVar(&keyID, "key-id", "sigkey", "set generated signing key id")
 	flag.BoolVar(&saveSettings, "save", false, "save config and exit")
@@ -177,22 +178,10 @@ func main() {
 			log.Fatal("!!! missing password")
 		}
 		if generateTOTPKey {
-			var otpID = "auth-server"
-			if issuerURL, err := url.Parse(serverSettings.Issuer); err != nil {
-				log.Printf("!!! %s", err)
-			} else {
-				if issuerURL.Hostname() != "" && issuerURL.Hostname() != "localhost" {
-					otpID = issuerURL.Hostname()
-				}
-				if issuerURL.Path != "" && issuerURL.Path != "/" {
-					otpID += issuerURL.Path
-				}
-			}
-			log.Printf("Generating TOTP Key for %s@%s", setUserID, otpID)
-			if totpKey, err := totp.Generate(totp.GenerateOpts{Issuer: otpID, AccountName: setUserID}); err != nil {
+			if totpKey, err := otpkey.GenerateKey(serverSettings.Issuer, setUserID, totpHashAlgorithm); err != nil {
 				log.Fatalf("!!! %s", err)
 			} else {
-				user.OTPKeyURI = totpKey.URL()
+				user.OTPKeyURI = totpKey
 			}
 		}
 		serverSettings.Users[setUserID] = user
@@ -340,7 +329,7 @@ func main() {
 	router.Handle(basePath+"/revoke", oauth2.RevokeHandler(tokenCreator, clientStore, trlStore)).
 		Methods(http.MethodPost, http.MethodOptions)
 
-	router.Handle(basePath+"/otp", server.OTPHandler(peopleStore, clientStore, otpKeyStore, basePath, serverSettings.SessionName)).
+	router.Handle(basePath+"/otp", server.OTPHandler(peopleStore, clientStore, otpKeyStore, basePath, serverSettings.SessionName, version)).
 		Methods(http.MethodGet)
 
 	if !serverSettings.DisableAPI {
