@@ -1,4 +1,4 @@
-package otpkey
+package otpauth
 
 import (
 	"bytes"
@@ -13,11 +13,11 @@ import (
 
 var ErrNotFound = errors.New("no otp key found")
 
-type OTPKey struct {
+type KeyWrapper struct {
 	key *otp.Key
 }
 
-func (k OTPKey) Verify(code string) bool {
+func (k KeyWrapper) VerifyCode(code string) bool {
 	if valid, err := totp.ValidateCustom(code, k.key.Secret(), time.Now(), totp.ValidateOpts{
 		Period:    uint(k.key.Period()),
 		Digits:    k.key.Digits(),
@@ -30,7 +30,7 @@ func (k OTPKey) Verify(code string) bool {
 	}
 }
 
-func (k OTPKey) PNG() (string, error) {
+func (k KeyWrapper) PNG() (string, error) {
 	var img, err = k.key.Image(400, 400)
 	if err != nil {
 		return "", err
@@ -44,7 +44,7 @@ func (k OTPKey) PNG() (string, error) {
 }
 
 type Store interface {
-	Lookup(userID string) (*OTPKey, error)
+	Lookup(userID string) (*KeyWrapper, error)
 	Ping() error
 	ReadOnly() bool
 }

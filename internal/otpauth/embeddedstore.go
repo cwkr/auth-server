@@ -1,4 +1,4 @@
-package otpkey
+package otpauth
 
 import (
 	"github.com/cwkr/auth-server/internal/people"
@@ -16,7 +16,7 @@ func NewEmbeddedStore(users map[string]people.AuthenticPerson) Store {
 	}
 }
 
-func (e embeddedStore) Lookup(userID string) (*OTPKey, error) {
+func (e embeddedStore) Lookup(userID string) (*KeyWrapper, error) {
 	var authenticPerson, found = e.users[strings.ToLower(userID)]
 	if !found || !strings.HasPrefix(authenticPerson.OTPKeyURI, PrefixOTPAuth) {
 		return nil, ErrNotFound
@@ -24,7 +24,7 @@ func (e embeddedStore) Lookup(userID string) (*OTPKey, error) {
 	if k, err := otp.NewKeyFromURL(authenticPerson.OTPKeyURI); err != nil {
 		return nil, err
 	} else {
-		return &OTPKey{key: k}, nil
+		return &KeyWrapper{key: k}, nil
 	}
 }
 

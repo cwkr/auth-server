@@ -11,7 +11,7 @@ import (
 	"github.com/cwkr/authd/internal/oauth2"
 	"github.com/cwkr/authd/internal/oauth2/clients"
 	"github.com/cwkr/authd/internal/oauth2/trl"
-	"github.com/cwkr/authd/internal/otpkey"
+	"github.com/cwkr/authd/internal/otpauth"
 	"github.com/cwkr/authd/internal/people"
 	"github.com/cwkr/authd/internal/server"
 	"github.com/cwkr/authd/internal/sqlutil"
@@ -178,10 +178,10 @@ func main() {
 			log.Fatal("!!! missing password")
 		}
 		if generateTOTPKey {
-			if totpKey, err := otpkey.GenerateKey(serverSettings.Issuer, setUserID, totpHashAlgorithm); err != nil {
+			if totpURI, err := otpauth.GenerateURI(serverSettings.Issuer, setUserID, totpHashAlgorithm); err != nil {
 				log.Fatalf("!!! %s", err)
 			} else {
-				user.OTPKeyURI = totpKey
+				user.OTPKeyURI = totpURI
 			}
 		}
 		serverSettings.Users[setUserID] = user
@@ -290,7 +290,7 @@ func main() {
 		trlStore = trl.NewNoopStore()
 	}
 
-	var otpKeyStore = otpkey.NewEmbeddedStore(users)
+	var otpAuthStore = otpauth.NewEmbeddedStore(users)
 
 	var router = mux.NewRouter()
 
@@ -307,7 +307,7 @@ func main() {
 		Methods(http.MethodGet)
 	router.Handle(basePath+"/favicon-32x32.png", server.Favicon32x32Handler()).
 		Methods(http.MethodGet)
-	router.Handle(basePath+"/login", server.LoginHandler(basePath, peopleStore, clientStore, otpKeyStore, serverSettings.Issuer, serverSettings.SessionName)).
+	router.Handle(basePath+"/login", server.LoginHandler(basePath, peopleStore, clientStore, otpAuthStore, serverSettings.Issuer, serverSettings.SessionName)).
 		Methods(http.MethodGet, http.MethodPost)
 	router.Handle(basePath+"/logout", server.LogoutHandler(basePath, serverSettings, sessionStore, clientStore))
 	router.Handle(basePath+"/health", server.HealthHandler(peopleStore)).
@@ -329,7 +329,7 @@ func main() {
 	router.Handle(basePath+"/revoke", oauth2.RevokeHandler(tokenCreator, clientStore, trlStore)).
 		Methods(http.MethodPost, http.MethodOptions)
 
-	router.Handle(basePath+"/otp", server.OTPHandler(peopleStore, clientStore, otpKeyStore, basePath, serverSettings.SessionName, version)).
+	router.Handle(basePath+"/otp", server.OTPHandler(peopleStore, clientStore, otpAuthStore, basePath, serverSettings.SessionName, version)).
 		Methods(http.MethodGet)
 
 	if !serverSettings.DisableAPI {

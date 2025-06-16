@@ -1,4 +1,4 @@
-package otpkey
+package otpauth
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ var (
 	ErrUnsupportedAlgorithm = errors.New("unsupported algorithm")
 )
 
-func GenerateKey(issuer, userID, algorithm string) (string, error) {
+func GenerateURI(issuer, userID, algorithm string) (string, error) {
 	var otpID = "auth-server"
 	if issuerURL, err := url.Parse(issuer); err != nil {
 		return "", err

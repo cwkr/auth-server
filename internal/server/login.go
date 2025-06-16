@@ -6,7 +6,7 @@ import (
 	"github.com/cwkr/authd/internal/htmlutil"
 	"github.com/cwkr/authd/internal/httputil"
 	"github.com/cwkr/authd/internal/oauth2/clients"
-	"github.com/cwkr/authd/internal/otpkey"
+	"github.com/cwkr/authd/internal/otpauth"
 	"github.com/cwkr/authd/internal/people"
 	"github.com/cwkr/authd/internal/stringutil"
 	"html/template"
@@ -30,13 +30,13 @@ func LoadLoginTemplate(filename string) error {
 }
 
 type loginHandler struct {
-	basePath    string
-	peopleStore people.Store
-	clientStore clients.Store
-	otpKeyStore otpkey.Store
-	issuer      string
-	sessionName string
-	tpl         *template.Template
+	basePath     string
+	peopleStore  people.Store
+	clientStore  clients.Store
+	otpAuthStore otpauth.Store
+	issuer       string
+	sessionName  string
+	tpl          *template.Template
 }
 
 func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +44,7 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (
 		message, userID, password, clientID, sessionName, code string
 		activeSession, verifiedSession, totpEnabled            bool
-		otpKey                                                 *otpkey.OTPKey
+		kw                                                     *otpauth.KeyWrapper
 	)
 
 	clientID = strings.ToLower(r.FormValue("client_id"))
@@ -74,8 +74,8 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if k, err := j.otpKeyStore.Lookup(userID); err == nil {
-			otpKey = k
+		if k, err := j.otpAuthStore.Lookup(userID); err == nil {
+			kw = k
 		}
 
 		if !activeSession {
@@ -84,7 +84,7 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				message = "username and password must not be empty"
 			} else {
 				if realUserID, err := j.peopleStore.Authenticate(userID, password); err == nil {
-					var codeRequired = otpKey != nil && totpEnabled
+					var codeRequired = kw != nil && totpEnabled
 					if err := j.peopleStore.SaveSession(r, w, time.Now(), realUserID, sessionName, codeRequired); err != nil {
 						htmlutil.Error(w, j.basePath, err.Error(), http.StatusInternalServerError)
 						return
@@ -107,10 +107,10 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if stringutil.IsAnyEmpty(code) {
 					message = "code must not be empty"
 				} else {
-					if otpKey == nil {
+					if kw == nil {
 						message = "OTP Key not missing"
 					} else {
-						if otpKey.Verify(code) == true {
+						if kw.VerifyCode(code) == true {
 							if err := j.peopleStore.VerifySession(r, w, userID, sessionName); err != nil {
 								message = err.Error()
 							} else {
@@ -147,14 +147,14 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LoginHandler(basePath string, peopleStore people.Store, clientStore clients.Store, otpKeyStore otpkey.Store, issuer, sessionName string) http.Handler {
+func LoginHandler(basePath string, peopleStore people.Store, clientStore clients.Store, otpAuthStore otpauth.Store, issuer, sessionName string) http.Handler {
 	return &loginHandler{
-		basePath:    basePath,
-		peopleStore: peopleStore,
-		clientStore: clientStore,
-		otpKeyStore: otpKeyStore,
-		issuer:      issuer,
-		sessionName: sessionName,
-		tpl:         template.Must(template.New("login").Parse(loginTpl)),
+		basePath:     basePath,
+		peopleStore:  peopleStore,
+		clientStore:  clientStore,
+		otpAuthStore: otpAuthStore,
+		issuer:       issuer,
+		sessionName:  sessionName,
+		tpl:          template.Must(template.New("login").Parse(loginTpl)),
 	}
 }

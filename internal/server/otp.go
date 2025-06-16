@@ -5,7 +5,7 @@ import (
 	"github.com/cwkr/auth-server/internal/htmlutil"
 	"github.com/cwkr/auth-server/internal/httputil"
 	"github.com/cwkr/auth-server/internal/oauth2/clients"
-	"github.com/cwkr/auth-server/internal/otpkey"
+	"github.com/cwkr/auth-server/internal/otpauth"
 	"github.com/cwkr/auth-server/internal/people"
 	"github.com/cwkr/auth-server/internal/stringutil"
 	"html/template"
@@ -18,13 +18,13 @@ import (
 var otpTpl string
 
 type otpHandler struct {
-	peopleStore people.Store
-	clientStore clients.Store
-	otpKeyStore otpkey.Store
-	tpl         *template.Template
-	basePath    string
-	sessionName string
-	version     string
+	peopleStore  people.Store
+	clientStore  clients.Store
+	otpAuthStore otpauth.Store
+	tpl          *template.Template
+	basePath     string
+	sessionName  string
+	version      string
 }
 
 func (o *otpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (o *otpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if uid, valid, _ := o.peopleStore.IsSessionActive(r, sessionName); valid {
-		if otpKey, err := o.otpKeyStore.Lookup(uid); err == nil {
+		if otpKey, err := o.otpAuthStore.Lookup(uid); err == nil {
 			httputil.NoCache(w)
 			var imageURL string
 			if !client.DisableTOTP && otpKey != nil {
@@ -83,14 +83,14 @@ func (o *otpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func OTPHandler(peopleStore people.Store, clientStore clients.Store, otpKeyStore otpkey.Store, basePath, sessionName, version string) http.Handler {
+func OTPHandler(peopleStore people.Store, clientStore clients.Store, otpAuthStore otpauth.Store, basePath, sessionName, version string) http.Handler {
 	return &otpHandler{
-		peopleStore: peopleStore,
-		clientStore: clientStore,
-		otpKeyStore: otpKeyStore,
-		tpl:         template.Must(template.New("otp").Parse(otpTpl)),
-		basePath:    basePath,
-		sessionName: sessionName,
-		version:     version,
+		peopleStore:  peopleStore,
+		clientStore:  clientStore,
+		otpAuthStore: otpAuthStore,
+		tpl:          template.Must(template.New("otp").Parse(otpTpl)),
+		basePath:     basePath,
+		sessionName:  sessionName,
+		version:      version,
 	}
 }
