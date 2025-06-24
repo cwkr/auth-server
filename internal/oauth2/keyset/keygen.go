@@ -1,4 +1,4 @@
-package oauth2
+package keyset
 
 import (
 	"crypto/rand"

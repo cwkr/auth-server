@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func RequireJWT(next http.Handler, tokenVerifier TokenVerifier) http.Handler {
+func RequireJWT(next http.Handler, tokenVerifier AccessTokenValidator) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var accessToken = httputil.ExtractAccessToken(r)
 		if accessToken == "" {
@@ -16,7 +16,7 @@ func RequireJWT(next http.Handler, tokenVerifier TokenVerifier) http.Handler {
 			oauth2.Error(w, "unauthorized", "authentication required", http.StatusUnauthorized)
 			return
 		}
-		var userID, err = tokenVerifier.VerifyToken(accessToken)
+		var userID, err = tokenVerifier.Validate(accessToken)
 		if err != nil {
 			w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer error=\"invalid_token\", error_description=\"%s\"", err.Error()))
 			oauth2.Error(w, "invalid_token", err.Error(), http.StatusUnauthorized)

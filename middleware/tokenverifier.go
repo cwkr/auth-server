@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"github.com/cwkr/auth-server/internal/maputil"
+	"github.com/cwkr/auth-server/internal/oauth2/keyset"
 	"github.com/go-jose/go-jose/v3/jwt"
 	"log"
 	"strings"
@@ -14,19 +15,25 @@ var (
 	ErrMatchingKeyNotFound = errors.New("matching key not found")
 )
 
-type TokenVerifier interface {
-	VerifyToken(rawToken string) (string, error)
+type AccessTokenValidator interface {
+	Validate(rawToken string) (string, error)
 }
 
-type tokenVerifier struct {
-	publicKeys map[string]any
+type accessTokenValidator struct {
+	keySetProvider keyset.Provider
 }
 
-func NewTokenVerifier(publicKeys map[string]any) TokenVerifier {
-	return &tokenVerifier{publicKeys: maputil.LowerKeys(publicKeys)}
+func NewAccessTokenValidator(keySetProvider keyset.Provider) AccessTokenValidator {
+	return &accessTokenValidator{keySetProvider}
 }
 
-func (t tokenVerifier) VerifyToken(rawToken string) (string, error) {
+func (t accessTokenValidator) Validate(rawToken string) (string, error) {
+	var publicKeys map[string]any
+	if pk, err := t.keySetProvider.Get(); err != nil {
+		return "", err
+	} else {
+		publicKeys = maputil.LowerKeys(pk)
+	}
 	var token, err = jwt.ParseSigned(rawToken)
 	if err != nil {
 		log.Printf("!!! %s", err)
@@ -35,7 +42,7 @@ func (t tokenVerifier) VerifyToken(rawToken string) (string, error) {
 	if len(token.Headers) == 0 || token.Headers[0].KeyID == "" {
 		return "", ErrMissingKid
 	}
-	var publicKey, found = t.publicKeys[strings.ToLower(token.Headers[0].KeyID)]
+	var publicKey, found = publicKeys[strings.ToLower(token.Headers[0].KeyID)]
 	if !found {
 		return "", ErrMatchingKeyNotFound
 	}

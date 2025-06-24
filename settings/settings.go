@@ -6,14 +6,15 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/cwkr/auth-server/internal/oauth2"
 	"github.com/cwkr/auth-server/internal/oauth2/clients"
+	"github.com/cwkr/auth-server/internal/oauth2/keyset"
 	"github.com/cwkr/auth-server/internal/oauth2/trl"
 	"github.com/cwkr/auth-server/internal/people"
 	"github.com/cwkr/auth-server/internal/stringutil"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Server struct {
@@ -41,9 +42,10 @@ type Server struct {
 	LoginTemplate           string                            `json:"login_template,omitempty"`
 	LogoutTemplate          string                            `json:"logout_template,omitempty"`
 	TRLStore                *trl.StoreSettings                `json:"trl_store,omitempty"`
+	KeysTTL                 int                               `json:"keys_ttl,omitempty"`
 	rsaSigningKey           *rsa.PrivateKey
 	rsaSigningKeyID         string
-	additionalPublicKeys    map[string]any
+	keySetProvider          keyset.Provider
 }
 
 func NewDefault(port int) *Server {
@@ -56,6 +58,7 @@ func NewDefault(port int) *Server {
 		SessionName:     "_auth",
 		SessionSecret:   stringutil.RandomAlphanumericString(32),
 		SessionTTL:      28_800,
+		KeysTTL:         900,
 	}
 }
 
@@ -64,7 +67,7 @@ func (s *Server) LoadKeys(basePath string) error {
 
 	if strings.HasPrefix(s.Key, "-----BEGIN RSA PRIVATE KEY-----") {
 		block, _ := pem.Decode([]byte(s.Key))
-		if s.rsaSigningKeyID = block.Headers[oauth2.HeaderKeyID]; s.rsaSigningKeyID == "" {
+		if s.rsaSigningKeyID = block.Headers[keyset.HeaderKeyID]; s.rsaSigningKeyID == "" {
 			s.rsaSigningKeyID = "sigkey"
 		}
 		s.rsaSigningKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -78,7 +81,7 @@ func (s *Server) LoadKeys(basePath string) error {
 			return err
 		}
 		block, _ := pem.Decode(pemBytes)
-		if s.rsaSigningKeyID = block.Headers[oauth2.HeaderKeyID]; s.rsaSigningKeyID == "" {
+		if s.rsaSigningKeyID = block.Headers[keyset.HeaderKeyID]; s.rsaSigningKeyID == "" {
 			s.rsaSigningKeyID = strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
 		}
 		s.rsaSigningKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -89,14 +92,16 @@ func (s *Server) LoadKeys(basePath string) error {
 		return errors.New("missing or malformed signing key")
 	}
 
-	s.additionalPublicKeys, err = oauth2.LoadPublicKeys(basePath, s.AdditionalKeys)
+	var keys = append([]string{s.PublicKeyPEM()}, s.AdditionalKeys...)
+
+	s.keySetProvider = keyset.NewProvider(basePath, keys, time.Duration(s.KeysTTL)*time.Second)
 	return err
 }
 
 func (s *Server) GenerateSigningKey(keySize int, keyID string) error {
 	var keyBytes []byte
 	var err error
-	keyBytes, err = oauth2.GeneratePrivateKey(keySize, keyID)
+	keyBytes, err = keyset.GeneratePrivateKey(keySize, keyID)
 	if err != nil {
 		return err
 	}
@@ -112,15 +117,21 @@ func (s Server) PublicKey() *rsa.PublicKey {
 	return &s.rsaSigningKey.PublicKey
 }
 
+func (s Server) PublicKeyPEM() string {
+	var pubASN1, _ = x509.MarshalPKIXPublicKey(s.PublicKey())
+
+	var pubBytes = pem.EncodeToMemory(&pem.Block{
+		Type:    "PUBLIC KEY",
+		Bytes:   pubASN1,
+		Headers: map[string]string{keyset.HeaderKeyID: s.rsaSigningKeyID},
+	})
+	return string(pubBytes)
+}
+
 func (s Server) KeyID() string {
 	return s.rsaSigningKeyID
 }
 
-func (s Server) AllKeys() map[string]any {
-	var allKeys = make(map[string]any)
-	allKeys[s.rsaSigningKeyID] = s.PublicKey()
-	for kid, publicKey := range s.additionalPublicKeys {
-		allKeys[kid] = publicKey
-	}
-	return allKeys
+func (s Server) KeySetProvider() keyset.Provider {
+	return s.keySetProvider
 }

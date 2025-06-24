@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/cwkr/auth-server/internal/oauth2"
+	"github.com/cwkr/auth-server/internal/oauth2/keyset"
 	"log"
 	"os"
 )
@@ -28,7 +28,7 @@ func main() {
 		panic("key size less than 1024")
 	}
 
-	keyBytes, err = oauth2.GeneratePrivateKey(keySize, keyID)
+	keyBytes, err = keyset.GeneratePrivateKey(keySize, keyID)
 	if err != nil {
 		panic(err)
 	}

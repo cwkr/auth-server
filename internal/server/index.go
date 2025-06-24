@@ -2,9 +2,7 @@ package server
 
 import (
 	"crypto/rsa"
-	"crypto/x509"
 	_ "embed"
-	"encoding/pem"
 	"fmt"
 	"github.com/cwkr/auth-server/internal/htmlutil"
 	"github.com/cwkr/auth-server/internal/httputil"
@@ -42,13 +40,6 @@ type activeSession struct {
 func (i *indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s", r.Method, r.URL)
 
-	var pubASN1, _ = x509.MarshalPKIXPublicKey(i.serverSettings.PublicKey())
-
-	var pubBytes = pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubASN1,
-	})
-
 	var clientIDs []string
 	var activeSessions []activeSession
 
@@ -76,7 +67,7 @@ func (i *indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"base_path":       i.basePath,
 		"issuer":          strings.TrimRight(i.serverSettings.Issuer, "/"),
 		"title":           title,
-		"public_key":      string(pubBytes),
+		"public_key":      i.serverSettings.PublicKeyPEM(),
 		"state":           fmt.Sprint(rand.Int()),
 		"nonce":           stringutil.RandomAlphanumericString(10),
 		"scopes":          strings.Fields(i.scope),

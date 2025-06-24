@@ -33,28 +33,28 @@ var version = "v0.6.x"
 
 func main() {
 	var (
-		serverSettings   *settings.Server
-		tokenCreator     oauth2.TokenCreator
-		tokenVerifier    middleware.TokenVerifier
-		peopleStore      people.Store
-		trlStore         trl.Store
-		clientStore      clients.Store
-		err              error
-		configFilename   string
-		settingsFilename string
-		setClientID      string
-		setClientSecret  string
-		setUserID        string
-		setPassword      string
-		setGivenName     string
-		setFamilyName    string
-		setEmail         string
-		setDepartment    string
-		keySize          int
-		keyID            string
-		saveSettings     bool
-		printVersion     bool
-		setPort          int
+		serverSettings       *settings.Server
+		tokenCreator         oauth2.TokenCreator
+		accessTokenValidator middleware.AccessTokenValidator
+		peopleStore          people.Store
+		trlStore             trl.Store
+		clientStore          clients.Store
+		err                  error
+		configFilename       string
+		settingsFilename     string
+		setClientID          string
+		setClientSecret      string
+		setUserID            string
+		setPassword          string
+		setGivenName         string
+		setFamilyName        string
+		setEmail             string
+		setDepartment        string
+		keySize              int
+		keyID                string
+		saveSettings         bool
+		printVersion         bool
+		setPort              int
 	)
 
 	log.SetOutput(os.Stdout)
@@ -214,7 +214,7 @@ func main() {
 		log.Fatalf("!!! %s", err)
 	}
 
-	tokenVerifier = middleware.NewTokenVerifier(serverSettings.AllKeys())
+	accessTokenValidator = middleware.NewAccessTokenValidator(serverSettings.KeySetProvider())
 
 	var basePath = ""
 	var sessionStore = sessions.NewCookieStore([]byte(serverSettings.SessionSecret))
@@ -301,7 +301,7 @@ func main() {
 	router.Handle(basePath+"/info", server.InfoHandler(version, runtime.Version())).
 		Methods(http.MethodGet)
 
-	router.Handle(basePath+"/jwks", oauth2.JwksHandler(serverSettings.AllKeys())).
+	router.Handle(basePath+"/jwks", oauth2.JwksHandler(serverSettings.KeySetProvider())).
 		Methods(http.MethodGet, http.MethodOptions)
 	router.Handle(basePath+"/token", oauth2.TokenHandler(tokenCreator, peopleStore, clientStore, trlStore, scope)).
 		Methods(http.MethodOptions, http.MethodPost)
@@ -309,7 +309,7 @@ func main() {
 		Methods(http.MethodGet)
 	router.Handle(basePath+"/.well-known/openid-configuration", oauth2.DiscoveryDocumentHandler(serverSettings.Issuer, scope)).
 		Methods(http.MethodGet, http.MethodOptions)
-	router.Handle(basePath+"/userinfo", middleware.RequireJWT(oauth2.UserInfoHandler(peopleStore, serverSettings.AccessTokenExtraClaims), tokenVerifier)).
+	router.Handle(basePath+"/userinfo", middleware.RequireJWT(oauth2.UserInfoHandler(peopleStore, serverSettings.AccessTokenExtraClaims), accessTokenValidator)).
 		Methods(http.MethodGet, http.MethodOptions)
 
 	router.Handle(basePath+"/revoke", oauth2.RevokeHandler(tokenCreator, clientStore, trlStore)).
@@ -318,14 +318,14 @@ func main() {
 	if !serverSettings.DisableAPI {
 		var lookupPersonHandler = server.LookupPersonHandler(peopleStore, serverSettings.PeopleAPICustomVersions)
 		if serverSettings.PeopleAPIRequireAuthN {
-			lookupPersonHandler = middleware.RequireJWT(lookupPersonHandler, tokenVerifier)
+			lookupPersonHandler = middleware.RequireJWT(lookupPersonHandler, accessTokenValidator)
 		}
 		router.Handle(basePath+"/api/{version}/people/{user_id}", lookupPersonHandler).
 			Methods(http.MethodGet, http.MethodOptions)
 		if !peopleStore.ReadOnly() {
-			router.Handle(basePath+"/api/v1/people/{user_id}", middleware.RequireJWT(server.PutPersonHandler(peopleStore), tokenVerifier)).
+			router.Handle(basePath+"/api/v1/people/{user_id}", middleware.RequireJWT(server.PutPersonHandler(peopleStore), accessTokenValidator)).
 				Methods(http.MethodPut)
-			router.Handle(basePath+"/api/v1/people/{user_id}/password", middleware.RequireJWT(server.ChangePasswordHandler(peopleStore), tokenVerifier)).
+			router.Handle(basePath+"/api/v1/people/{user_id}/password", middleware.RequireJWT(server.ChangePasswordHandler(peopleStore), accessTokenValidator)).
 				Methods(http.MethodOptions, http.MethodPut)
 		}
 	}
