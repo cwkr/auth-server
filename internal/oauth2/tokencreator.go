@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"errors"
-	"github.com/cwkr/auth-server/internal/people"
+	"github.com/cwkr/authd/internal/people"
 	"github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/oklog/ulid/v2"

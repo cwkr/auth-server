@@ -1,10 +1,10 @@
 package oauth2
 
 import (
-	"github.com/cwkr/auth-server/internal/httputil"
-	"github.com/cwkr/auth-server/internal/oauth2/clients"
-	"github.com/cwkr/auth-server/internal/oauth2/trl"
-	"github.com/cwkr/auth-server/internal/stringutil"
+	"github.com/cwkr/authd/internal/httputil"
+	"github.com/cwkr/authd/internal/oauth2/clients"
+	"github.com/cwkr/authd/internal/oauth2/trl"
+	"github.com/cwkr/authd/internal/stringutil"
 	"log"
 	"net/http"
 	"strings"

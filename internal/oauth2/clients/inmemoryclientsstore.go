@@ -1,7 +1,7 @@
 package clients
 
 import (
-	"github.com/cwkr/auth-server/internal/maputil"
+	"github.com/cwkr/authd/internal/maputil"
 	"golang.org/x/crypto/bcrypt"
 	"strings"
 )

@@ -2,8 +2,8 @@ package oauth2
 
 import (
 	"encoding/json"
-	"github.com/cwkr/auth-server/internal/httputil"
-	"github.com/cwkr/auth-server/internal/people"
+	"github.com/cwkr/authd/internal/httputil"
+	"github.com/cwkr/authd/internal/people"
 	"log"
 	"net/http"
 )

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/cwkr/auth-server/internal/oauth2"
+	"github.com/cwkr/authd/internal/oauth2"
 	"github.com/go-jose/go-jose/v3"
 	"log"
 	"os"

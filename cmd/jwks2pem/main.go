@@ -5,7 +5,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/cwkr/auth-server/internal/oauth2/keyset"
+	"github.com/cwkr/authd/internal/oauth2/keyset"
 	"io"
 	"log"
 	"net/http"

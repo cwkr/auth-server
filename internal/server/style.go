@@ -3,7 +3,7 @@ package server
 import (
 	_ "embed"
 	"fmt"
-	"github.com/cwkr/auth-server/internal/httputil"
+	"github.com/cwkr/authd/internal/httputil"
 	"log"
 	"net/http"
 	"time"

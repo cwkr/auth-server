@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/cwkr/auth-server/internal/fileutil"
-	"github.com/cwkr/auth-server/internal/htmlutil"
-	"github.com/cwkr/auth-server/internal/maputil"
-	"github.com/cwkr/auth-server/internal/oauth2"
-	"github.com/cwkr/auth-server/internal/oauth2/clients"
-	"github.com/cwkr/auth-server/internal/oauth2/trl"
-	"github.com/cwkr/auth-server/internal/people"
-	"github.com/cwkr/auth-server/internal/server"
-	"github.com/cwkr/auth-server/internal/sqlutil"
-	"github.com/cwkr/auth-server/middleware"
-	"github.com/cwkr/auth-server/settings"
+	"github.com/cwkr/authd/internal/fileutil"
+	"github.com/cwkr/authd/internal/htmlutil"
+	"github.com/cwkr/authd/internal/maputil"
+	"github.com/cwkr/authd/internal/oauth2"
+	"github.com/cwkr/authd/internal/oauth2/clients"
+	"github.com/cwkr/authd/internal/oauth2/trl"
+	"github.com/cwkr/authd/internal/people"
+	"github.com/cwkr/authd/internal/server"
+	"github.com/cwkr/authd/internal/sqlutil"
+	"github.com/cwkr/authd/middleware"
+	"github.com/cwkr/authd/settings"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/hjson/hjson-go/v4"
@@ -29,7 +29,7 @@ import (
 	"strings"
 )
 
-var version = "v0.6.x"
+var version = "v0.7.x"
 
 func main() {
 	var (

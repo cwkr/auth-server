@@ -2,10 +2,10 @@ package server
 
 import (
 	"encoding/json"
-	"github.com/cwkr/auth-server/internal/httputil"
-	"github.com/cwkr/auth-server/internal/oauth2"
-	"github.com/cwkr/auth-server/internal/people"
-	"github.com/cwkr/auth-server/internal/stringutil"
+	"github.com/cwkr/authd/internal/httputil"
+	"github.com/cwkr/authd/internal/oauth2"
+	"github.com/cwkr/authd/internal/people"
+	"github.com/cwkr/authd/internal/stringutil"
 	"github.com/gorilla/mux"
 	"io"
 	"log"

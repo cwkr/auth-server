@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/blockloop/scan/v2"
-	"github.com/cwkr/auth-server/internal/sqlutil"
+	"github.com/cwkr/authd/internal/sqlutil"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 	"log"

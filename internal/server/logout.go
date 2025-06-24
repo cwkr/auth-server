@@ -2,10 +2,10 @@ package server
 
 import (
 	_ "embed"
-	"github.com/cwkr/auth-server/internal/htmlutil"
-	"github.com/cwkr/auth-server/internal/httputil"
-	"github.com/cwkr/auth-server/internal/oauth2/clients"
-	"github.com/cwkr/auth-server/settings"
+	"github.com/cwkr/authd/internal/htmlutil"
+	"github.com/cwkr/authd/internal/httputil"
+	"github.com/cwkr/authd/internal/oauth2/clients"
+	"github.com/cwkr/authd/settings"
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/gorilla/sessions"
 	"html/template"

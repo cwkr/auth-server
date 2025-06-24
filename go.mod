@@ -1,4 +1,4 @@
-module github.com/cwkr/auth-server
+module github.com/cwkr/authd
 
 go 1.24
 

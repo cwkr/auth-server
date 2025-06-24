@@ -2,11 +2,11 @@ package server
 
 import (
 	_ "embed"
-	"github.com/cwkr/auth-server/internal/htmlutil"
-	"github.com/cwkr/auth-server/internal/httputil"
-	"github.com/cwkr/auth-server/internal/oauth2/clients"
-	"github.com/cwkr/auth-server/internal/people"
-	"github.com/cwkr/auth-server/internal/stringutil"
+	"github.com/cwkr/authd/internal/htmlutil"
+	"github.com/cwkr/authd/internal/httputil"
+	"github.com/cwkr/authd/internal/oauth2/clients"
+	"github.com/cwkr/authd/internal/people"
+	"github.com/cwkr/authd/internal/stringutil"
 	"html/template"
 	"log"
 	"net/http"

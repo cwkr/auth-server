@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"errors"
-	"github.com/cwkr/auth-server/internal/maputil"
-	"github.com/cwkr/auth-server/internal/oauth2/keyset"
+	"github.com/cwkr/authd/internal/maputil"
+	"github.com/cwkr/authd/internal/oauth2/keyset"
 	"github.com/go-jose/go-jose/v3/jwt"
 	"log"
 	"strings"
