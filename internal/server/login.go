@@ -108,7 +108,7 @@ func (j *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					message = "code must not be empty"
 				} else {
 					if kw == nil {
-						message = "OTP Key not missing"
+						message = "OTP Key not found"
 					} else {
 						if kw.VerifyCode(code) == true {
 							if err := j.peopleStore.VerifySession(r, w, userID, sessionName); err != nil {

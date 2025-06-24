@@ -1,7 +1,7 @@
 package otpauth
 
 import (
-	"github.com/cwkr/auth-server/internal/people"
+	"github.com/cwkr/authd/internal/people"
 	"github.com/pquerna/otp"
 	"strings"
 )

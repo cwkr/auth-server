@@ -2,12 +2,12 @@ package server
 
 import (
 	_ "embed"
-	"github.com/cwkr/auth-server/internal/htmlutil"
-	"github.com/cwkr/auth-server/internal/httputil"
-	"github.com/cwkr/auth-server/internal/oauth2/clients"
-	"github.com/cwkr/auth-server/internal/otpauth"
-	"github.com/cwkr/auth-server/internal/people"
-	"github.com/cwkr/auth-server/internal/stringutil"
+	"github.com/cwkr/authd/internal/htmlutil"
+	"github.com/cwkr/authd/internal/httputil"
+	"github.com/cwkr/authd/internal/oauth2/clients"
+	"github.com/cwkr/authd/internal/otpauth"
+	"github.com/cwkr/authd/internal/people"
+	"github.com/cwkr/authd/internal/stringutil"
 	"html/template"
 	"log"
 	"net/http"
@@ -52,28 +52,24 @@ func (o *otpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if uid, valid, _ := o.peopleStore.IsSessionActive(r, sessionName); valid {
-		if otpKey, err := o.otpAuthStore.Lookup(uid); err == nil {
-			httputil.NoCache(w)
-			var imageURL string
-			if !client.DisableTOTP && otpKey != nil {
-				if dataURL, err := otpKey.PNG(); err != nil {
-					htmlutil.Error(w, o.basePath, err.Error(), http.StatusInternalServerError)
-					return
-				} else {
-					imageURL = dataURL
-				}
-			}
-			if err := o.tpl.ExecuteTemplate(w, "otp", map[string]any{
-				"base_path":           o.basePath,
-				"qrcode":              template.URL(imageURL),
-				"client_totp_enabled": !client.DisableTOTP,
-				"user_totp_enabled":   otpKey != nil,
-				"version":             o.version,
-			}); err != nil {
+		keyWrapper, _ := o.otpAuthStore.Lookup(uid)
+		httputil.NoCache(w)
+		var imageURL string
+		if !client.DisableTOTP && keyWrapper != nil {
+			if dataURL, err := keyWrapper.PNG(); err != nil {
 				htmlutil.Error(w, o.basePath, err.Error(), http.StatusInternalServerError)
 				return
+			} else {
+				imageURL = dataURL
 			}
-		} else {
+		}
+		if err := o.tpl.ExecuteTemplate(w, "otp", map[string]any{
+			"base_path":           o.basePath,
+			"qrcode":              template.URL(imageURL),
+			"client_totp_enabled": !client.DisableTOTP,
+			"user_totp_enabled":   keyWrapper != nil,
+			"version":             o.version,
+		}); err != nil {
 			htmlutil.Error(w, o.basePath, err.Error(), http.StatusInternalServerError)
 			return
 		}
