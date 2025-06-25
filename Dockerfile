@@ -1,4 +1,4 @@
-FROM golang:1.22-bookworm AS build
+FROM golang:1.24-bookworm AS build
 
 ARG VERSION
 
@@ -6,14 +6,14 @@ WORKDIR /src
 
 COPY ./ ./
 
-RUN go build -ldflags "-X main.version=${VERSION}"
+RUN cd cmd/auth-server && go build -ldflags "-X main.version=${VERSION}"
 
 
 FROM debian:bookworm-slim
 
 WORKDIR /
 
-COPY --from=build /src/auth-server /bin/auth-server
+COPY --from=build "/src/cmd/auth-server/auth-server" "/bin/auth-server"
 
 EXPOSE 6080
 
