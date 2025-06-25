@@ -3,7 +3,7 @@ package oauth2
 import (
 	"encoding/json"
 	"github.com/cwkr/authd/internal/httputil"
-	"github.com/cwkr/authd/internal/oauth2/keyset"
+	"github.com/cwkr/authd/keyset"
 	"github.com/go-jose/go-jose/v3"
 	"log"
 	"net/http"

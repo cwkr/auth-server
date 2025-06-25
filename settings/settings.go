@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"github.com/cwkr/authd/internal/oauth2"
 	"github.com/cwkr/authd/internal/oauth2/clients"
-	"github.com/cwkr/authd/internal/oauth2/keyset"
 	"github.com/cwkr/authd/internal/oauth2/trl"
 	"github.com/cwkr/authd/internal/people"
 	"github.com/cwkr/authd/internal/stringutil"
+	"github.com/cwkr/authd/keyset"
 	"os"
 	"path/filepath"
 	"strings"
@@ -64,7 +64,7 @@ func NewDefault(port int) *Server {
 	}
 }
 
-func (s *Server) LoadKeys(basePath string) error {
+func (s *Server) LoadKeys(dir string) error {
 	var err error
 
 	if strings.HasPrefix(s.Key, "-----BEGIN RSA PRIVATE KEY-----") {
@@ -77,7 +77,7 @@ func (s *Server) LoadKeys(basePath string) error {
 			return err
 		}
 	} else if strings.HasPrefix(s.Key, "@") {
-		var filename = filepath.Join(basePath, s.Key[1:])
+		var filename = filepath.Join(dir, s.Key[1:])
 		pemBytes, err := os.ReadFile(filename)
 		if err != nil {
 			return err
@@ -96,7 +96,7 @@ func (s *Server) LoadKeys(basePath string) error {
 
 	var keys = append([]string{s.PublicKeyPEM()}, s.AdditionalKeys...)
 
-	s.keySetProvider = keyset.NewProvider(basePath, keys, time.Duration(s.KeysTTL)*time.Second)
+	s.keySetProvider = keyset.NewProvider(dir, keys, time.Duration(s.KeysTTL)*time.Second)
 	return err
 }
 

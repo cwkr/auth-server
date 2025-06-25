@@ -5,7 +5,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/cwkr/authd/internal/oauth2/keyset"
+	"github.com/cwkr/authd/keyset"
 	"io"
 	"log"
 	"net/http"
@@ -45,7 +45,7 @@ func main() {
 	}
 
 	var publicKeys map[string]any
-	if jwks, err := keyset.UnmarshalJWKS(jwksBytes); err != nil {
+	if jwks, err := keyset.UnmarshalJWKS(jwksBytes); err == nil {
 		publicKeys = keyset.ToPublicKeys(jwks)
 	} else {
 		panic(err)

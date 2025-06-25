@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/cwkr/authd/internal/oauth2/keyset"
+	"github.com/cwkr/authd/keyset"
 	"log"
 	"os"
 )
