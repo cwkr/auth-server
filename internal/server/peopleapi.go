@@ -7,10 +7,12 @@ import (
 	"github.com/cwkr/authd/internal/oauth2"
 	"github.com/cwkr/authd/internal/people"
 	"github.com/cwkr/authd/internal/stringutil"
+	"github.com/cwkr/authd/settings"
 	"github.com/gorilla/mux"
 	"io"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -18,8 +20,19 @@ const ErrorAccessDenied = "access_denied"
 
 type peopleAPIHandler struct {
 	peopleStore    people.Store
-	customVersions map[string]map[string]string
+	customVersions map[string]settings.CustomPeopleAPI
 	roleMappings   oauth2.RoleMappings
+}
+
+func cleanup(slice []string) []string {
+	var newSlice = make([]string, 0, len(slice))
+	for _, elem := range slice {
+		clean := strings.TrimSpace(elem)
+		if clean != "" {
+			newSlice = append(newSlice, clean)
+		}
+	}
+	return newSlice
 }
 
 func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -33,16 +46,33 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var pathVars = mux.Vars(r)
+	var apiVersion = strings.TrimSpace(pathVars["version"])
 
-	var userID = pathVars["user_id"]
+	var userID = strings.TrimSpace(pathVars["user_id"])
+	if userID == "" {
+		oauth2.Error(w, oauth2.ErrorInvalidRequest, "user_id must not be blank", http.StatusBadRequest)
+		return
+	}
+
 	if person, err := p.peopleStore.Lookup(userID); err == nil {
 		var bytes []byte
 		var err error
-		if customVersion, found := p.customVersions[pathVars["version"]]; found {
+		if customVersion, found := p.customVersions[apiVersion]; found {
 			var claims = make(map[string]any)
-			oauth2.AddExtraClaims(claims, customVersion, oauth2.User{UserID: userID, Person: *person}, "", p.roleMappings)
+			oauth2.AddExtraClaims(claims, customVersion.Attributes, oauth2.User{UserID: userID, Person: *person}, "", p.roleMappings)
+			if filterParamName := strings.TrimSpace(customVersion.FilterParam); filterParamName != "" {
+				var attrsToFetch = cleanup(strings.Split(strings.Join(r.URL.Query()[filterParamName], ","), ","))
+				if len(attrsToFetch) > 0 {
+					for key, _ := range claims {
+						if !slices.Contains(attrsToFetch, key) {
+							delete(claims, key)
+						}
+					}
+				}
+			}
+			oauth2.AddExtraClaims(claims, customVersion.FixedAttributes, oauth2.User{UserID: userID, Person: *person}, "", p.roleMappings)
 			bytes, err = json.Marshal(claims)
-		} else if pathVars["version"] == "v1" {
+		} else if apiVersion == "v1" {
 			bytes, err = json.Marshal(person)
 		} else {
 			oauth2.Error(w, oauth2.ErrorInvalidRequest, "unsupported version", http.StatusBadRequest)
@@ -66,7 +96,7 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LookupPersonHandler(peopleStore people.Store, customVersions map[string]map[string]string, roleMappings oauth2.RoleMappings) http.Handler {
+func LookupPersonHandler(peopleStore people.Store, customVersions map[string]settings.CustomPeopleAPI, roleMappings oauth2.RoleMappings) http.Handler {
 	return &peopleAPIHandler{
 		peopleStore:    peopleStore,
 		customVersions: customVersions,

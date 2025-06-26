@@ -17,6 +17,32 @@ type sqlStore struct {
 	settings *StoreSettings
 }
 
+type PersonDetails struct {
+	Birthdate     sql.NullString `db:"birthdate"`
+	Department    sql.NullString `db:"department"`
+	Email         sql.NullString `db:"email"`
+	FamilyName    sql.NullString `db:"family_name"`
+	GivenName     sql.NullString `db:"given_name"`
+	PhoneNumber   sql.NullString `db:"phone_number"`
+	StreetAddress sql.NullString `db:"street_address"`
+	Locality      sql.NullString `db:"locality"`
+	PostalCode    sql.NullString `db:"postal_code"`
+}
+
+func (p PersonDetails) Person() *Person {
+	return &Person{
+		Birthdate:     p.Birthdate.String,
+		Department:    p.Department.String,
+		Email:         p.Email.String,
+		FamilyName:    p.FamilyName.String,
+		GivenName:     p.GivenName.String,
+		PhoneNumber:   p.PhoneNumber.String,
+		StreetAddress: p.StreetAddress.String,
+		Locality:      p.Locality.String,
+		PostalCode:    p.PostalCode.String,
+	}
+}
+
 func NewSqlStore(sessionStore sessions.Store, users map[string]AuthenticPerson, sessionTTL int64, dbs map[string]*sql.DB, settings *StoreSettings) (Store, error) {
 	if dbconn, err := sqlutil.GetDB(dbs, settings.URI); err != nil {
 		return nil, err
@@ -54,16 +80,14 @@ func (p sqlStore) queryGroups(userID string) ([]string, error) {
 }
 
 func (p sqlStore) queryDetails(userID string) (*Person, error) {
-	var person Person
+	var personDetails PersonDetails
 
 	log.Printf("SQL: %s; -- %s", p.settings.DetailsQuery, userID)
-	// SELECT COALESCE(given_name, '') given_name, COALESCE(family_name, '') family_name, COALESCE(email, '') email,
-	// COALESCE(TO_CHAR(birthdate, 'YYYY-MM-DD'), '') birthdate, COALESCE(department, '') department,
-	// COALESCE(phone_number, '') phone_number, COALESCE(street_address, '') street_address,
-	// COALESCE(locality, '') locality, COALESCE(postal_code, '') postal_code
+	// SELECT given_name, family_name, email, TO_CHAR(birthdate, 'YYYY-MM-DD') birthdate, department,
+	// phone_number, street_address, locality, postal_code
 	// FROM people WHERE lower(user_id) = lower($1)
 	if rows, err := p.dbconn.Query(p.settings.DetailsQuery, userID); err == nil {
-		if err := scan.RowStrict(&person, rows); err != nil {
+		if err := scan.RowStrict(&personDetails, rows); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, ErrPersonNotFound
 			}
@@ -72,7 +96,7 @@ func (p sqlStore) queryDetails(userID string) (*Person, error) {
 	} else {
 		return nil, err
 	}
-	return &person, nil
+	return personDetails.Person(), nil
 }
 
 func (p sqlStore) Authenticate(userID, password string) (string, error) {

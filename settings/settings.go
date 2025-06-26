@@ -18,6 +18,12 @@ import (
 	"time"
 )
 
+type CustomPeopleAPI struct {
+	FilterParam     string            `json:"filter_param"`
+	Attributes      map[string]string `json:"attributes"`
+	FixedAttributes map[string]string `json:"fixed_attributes"`
+}
+
 type Server struct {
 	Issuer                  string                            `json:"issuer"`
 	Port                    int                               `json:"port"`
@@ -38,7 +44,7 @@ type Server struct {
 	SessionTTL              int                               `json:"session_ttl"`
 	PeopleStore             *people.StoreSettings             `json:"people_store,omitempty"`
 	DisableAPI              bool                              `json:"disable_api,omitempty"`
-	PeopleAPICustomVersions map[string]map[string]string      `json:"people_api_custom_versions,omitempty"`
+	PeopleAPICustomVersions map[string]CustomPeopleAPI        `json:"people_api_custom_versions,omitempty"`
 	PeopleAPIRequireAuthN   bool                              `json:"people_api_require_authn,omitempty"`
 	LoginTemplate           string                            `json:"login_template,omitempty"`
 	LogoutTemplate          string                            `json:"logout_template,omitempty"`

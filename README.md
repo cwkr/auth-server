@@ -45,8 +45,9 @@ go install github.com/cwkr/authd/cmd/auth-server@latest
     }
   },
   "client_store": {
-    "uri": "postgresql://authserver:trustno1@localhost/dev?sslmode=disable",
-    "query": "SELECT COALESCE(redirect_uri_pattern, '') redirect_uri_pattern, COALESCE(secret_hash, '') secret_hash, COALESCE(session_name, '') session_name, disable_implicit, enable_refresh_token_rotation FROM clients WHERE lower(client_id) = lower($1)"
+    "uri": "postgresql://authserver:trustno1@localhost:5432/dev?sslmode=disable",
+    "query": "SELECT redirect_uri_pattern, secret_hash, session_name, disable_implicit, enable_refresh_token_rotation FROM clients WHERE lower(client_id) = lower($1)",
+    "query_session_names": "SELECT client_id, session_name FROM clients"
   },
   // define custom access token claims
   "access_token_extra_claims": {
@@ -70,10 +71,10 @@ go install github.com/cwkr/authd/cmd/auth-server@latest
   "session_ttl": 28800,
   "keys_ttl": 900,
   "people_store": {
-    "uri": "postgresql://authserver:trustno1@localhost/dev?sslmode=disable",
+    "uri": "postgresql://authserver:trustno1@localhost:5432/dev?sslmode=disable",
     "credentials_query": "SELECT user_id, password_hash FROM users WHERE lower(user_id) = lower($1)",
     "groups_query": "SELECT UNNEST(groups) FROM users WHERE lower(user_id) = lower($1)",
-    "details_query": "SELECT COALESCE(given_name, '') given_name, COALESCE(family_name, '') family_name, COALESCE(email, '') email, COALESCE(TO_CHAR(birthdate, 'YYYY-MM-DD'), '') birthdate, COALESCE(department, '') department, COALESCE(phone_number, '') phone_number, COALESCE(street_address, '') street_address, COALESCE(locality, '') locality, COALESCE(postal_code, '') postal_code FROM people WHERE lower(user_id) = lower($1)",
+    "details_query": "SELECT given_name, family_name, email, TO_CHAR(birthdate, 'YYYY-MM-DD') birthdate, department, phone_number, street_address, locality, postal_code FROM people WHERE lower(user_id) = lower($1)",
     "update": "UPDATE people SET given_name = $2, family_name = $3, email = $4, department = $5, birthdate = TO_DATE($6, 'YYYY-MM-DD'), phone_number = $7, locality = $8, street_address = $9, postal_code = $10, last_modified = now() WHERE lower(user_id) = lower($1)",
     "set_password": "UPDATE people SET password_hash = $2, last_modified = now() WHERE lower(user_id) = lower($1)"
   },

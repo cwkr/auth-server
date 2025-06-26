@@ -11,6 +11,24 @@ import (
 	"strings"
 )
 
+type sqlClient struct {
+	RedirectURIPattern         sql.NullString `db:"redirect_uri_pattern"`
+	SecretHash                 sql.NullString `db:"secret_hash"`
+	SessionName                sql.NullString `db:"session_name"`
+	DisableImplicit            sql.NullBool   `db:"disable_implicit"`
+	EnableRefreshTokenRotation sql.NullBool   `db:"enable_refresh_token_rotation"`
+}
+
+func (s *sqlClient) Client() *Client {
+	return &Client{
+		RedirectURIPattern:         s.RedirectURIPattern.String,
+		SecretHash:                 s.SecretHash.String,
+		SessionName:                s.SessionName.String,
+		DisableImplicit:            s.DisableImplicit.Bool,
+		EnableRefreshTokenRotation: s.EnableRefreshTokenRotation.Bool,
+	}
+}
+
 type sqlStore struct {
 	inMemoryClientStore
 	dbconn   *sql.DB
@@ -45,11 +63,15 @@ func (s *sqlStore) Lookup(clientID string) (*Client, error) {
 		return c, nil
 	}
 
-	var client Client
+	if strings.TrimSpace(s.settings.Query) == "" {
+		log.Print("!!! SQL query empty")
+		return nil, nil
+	}
 
+	var client sqlClient
 	log.Printf("SQL: %s; -- %s", s.settings.Query, clientID)
-	// SELECT COALESCE(redirect_uri_pattern, ''), COALESCE(secret_hash, ''), COALESCE(session_name, ''),
-	// disable_implicit, enable_refresh_token_rotation FROM clients WHERE lower(client_id) = lower($1)
+	// SELECT redirect_uri_pattern, secret_hash, session_name, disable_implicit, enable_refresh_token_rotation
+	// FROM clients WHERE lower(client_id) = lower($1)
 	if rows, err := s.dbconn.Query(s.settings.Query, clientID); err == nil {
 		if err := scan.RowStrict(&client, rows); err != nil {
 			log.Printf("!!! Scan client failed: %v", err)
@@ -63,12 +85,12 @@ func (s *sqlStore) Lookup(clientID string) (*Client, error) {
 		return nil, err
 	}
 	log.Printf("%#v", client)
-	return &client, nil
+	return client.Client(), nil
 }
 
 type clientSessionInfo struct {
-	ClientID    string `db:"client_id"`
-	SessionName string `db:"session_name"`
+	ClientID    sql.NullString `db:"client_id"`
+	SessionName sql.NullString `db:"session_name"`
 }
 
 func (s *sqlStore) PerSessionNameMap(defaultSessionName string) (map[string][]string, error) {
@@ -101,12 +123,12 @@ func (s *sqlStore) PerSessionNameMap(defaultSessionName string) (map[string][]st
 
 	for _, client := range clients {
 		if !slices.ContainsFunc(inMemoryClientIDs, func(cid string) bool {
-			return strings.EqualFold(cid, client.ClientID)
+			return strings.EqualFold(cid, client.ClientID.String)
 		}) {
-			if client.SessionName != "" {
-				clientsPerSessionName[client.SessionName] = append(clientsPerSessionName[client.SessionName], client.ClientID)
+			if client.SessionName.String != "" {
+				clientsPerSessionName[client.SessionName.String] = append(clientsPerSessionName[client.SessionName.String], client.ClientID.String)
 			} else if defaultSessionName != "" {
-				clientsPerSessionName[defaultSessionName] = append(clientsPerSessionName[defaultSessionName], client.ClientID)
+				clientsPerSessionName[defaultSessionName] = append(clientsPerSessionName[defaultSessionName], client.ClientID.String)
 			} else {
 				return nil, ErrSessionNameMissing
 			}
