@@ -16,7 +16,7 @@ var (
 )
 
 type AccessTokenValidator interface {
-	Validate(rawToken string) (string, error)
+	Validate(rawToken string, audiences ...string) (string, error)
 }
 
 type accessTokenValidator struct {
@@ -27,7 +27,7 @@ func NewAccessTokenValidator(keySetProvider keyset.Provider) AccessTokenValidato
 	return &accessTokenValidator{keySetProvider}
 }
 
-func (t accessTokenValidator) Validate(rawToken string) (string, error) {
+func (t accessTokenValidator) Validate(rawToken string, audiences ...string) (string, error) {
 	var publicKeys map[string]any
 	if pk, err := t.keySetProvider.Get(); err != nil {
 		return "", err
@@ -52,7 +52,8 @@ func (t accessTokenValidator) Validate(rawToken string) (string, error) {
 		return "", err
 	}
 	err = claims.ValidateWithLeeway(jwt.Expected{
-		Time: time.Now(),
+		Time:     time.Now(),
+		Audience: audiences,
 	}, 0)
 	if err != nil {
 		log.Printf("!!! %s", err)

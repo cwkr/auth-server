@@ -310,7 +310,7 @@ func main() {
 		Methods(http.MethodGet)
 	router.Handle(basePath+"/.well-known/openid-configuration", oauth2.DiscoveryDocumentHandler(serverSettings.Issuer, scope)).
 		Methods(http.MethodGet, http.MethodOptions)
-	router.Handle(basePath+"/userinfo", middleware.RequireJWT(oauth2.UserInfoHandler(peopleStore, serverSettings.AccessTokenExtraClaims, serverSettings.Roles), accessTokenValidator)).
+	router.Handle(basePath+"/userinfo", middleware.RequireJWT(oauth2.UserInfoHandler(peopleStore, serverSettings.AccessTokenExtraClaims, serverSettings.Roles), accessTokenValidator, serverSettings.Issuer)).
 		Methods(http.MethodGet, http.MethodOptions)
 
 	router.Handle(basePath+"/revoke", oauth2.RevokeHandler(tokenCreator, clientStore, trlStore)).
@@ -320,14 +320,14 @@ func main() {
 		var lookupPersonHandler = server.LookupPersonHandler(peopleStore,
 			serverSettings.PeopleAPICustomVersions, serverSettings.Roles)
 		if serverSettings.PeopleAPIRequireAuthN {
-			lookupPersonHandler = middleware.RequireJWT(lookupPersonHandler, accessTokenValidator)
+			lookupPersonHandler = middleware.RequireJWT(lookupPersonHandler, accessTokenValidator, serverSettings.Issuer)
 		}
 		router.Handle(basePath+"/api/{version}/people/{user_id}", lookupPersonHandler).
 			Methods(http.MethodGet, http.MethodOptions)
 		if !peopleStore.ReadOnly() {
-			router.Handle(basePath+"/api/v1/people/{user_id}", middleware.RequireJWT(server.PutPersonHandler(peopleStore), accessTokenValidator)).
+			router.Handle(basePath+"/api/v1/people/{user_id}", middleware.RequireJWT(server.PutPersonHandler(peopleStore), accessTokenValidator, serverSettings.Issuer)).
 				Methods(http.MethodPut)
-			router.Handle(basePath+"/api/v1/people/{user_id}/password", middleware.RequireJWT(server.ChangePasswordHandler(peopleStore), accessTokenValidator)).
+			router.Handle(basePath+"/api/v1/people/{user_id}/password", middleware.RequireJWT(server.ChangePasswordHandler(peopleStore), accessTokenValidator, serverSettings.Issuer)).
 				Methods(http.MethodOptions, http.MethodPut)
 		}
 	}
