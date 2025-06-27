@@ -28,7 +28,9 @@ func AddExtraClaims(claims map[string]any, extraClaims map[string]string, user U
 				claims[key] = user.Groups
 			}
 		} else if strings.EqualFold(strings.TrimSpace(tmpl), "$roles") {
-			claims[key] = roleMappings.Roles(user)
+			if roles := roleMappings.Roles(user); len(roles) > 0 {
+				claims[key] = roles
+			}
 		} else if value := strings.TrimSpace(os.Expand(tmpl, func(name string) string {
 			switch strings.ToLower(name) {
 			case "birthdate":

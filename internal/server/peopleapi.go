@@ -24,6 +24,11 @@ type peopleAPIHandler struct {
 	roleMappings   oauth2.RoleMappings
 }
 
+type personWithRoles struct {
+	people.Person
+	Roles []string `json:"roles,omitempty"`
+}
+
 func cleanup(slice []string) []string {
 	var newSlice = make([]string, 0, len(slice))
 	for _, elem := range slice {
@@ -55,11 +60,12 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if person, err := p.peopleStore.Lookup(userID); err == nil {
+		var user = oauth2.User{UserID: userID, Person: *person}
 		var bytes []byte
 		var err error
 		if customVersion, found := p.customVersions[apiVersion]; found {
 			var claims = make(map[string]any)
-			oauth2.AddExtraClaims(claims, customVersion.Attributes, oauth2.User{UserID: userID, Person: *person}, "", p.roleMappings)
+			oauth2.AddExtraClaims(claims, customVersion.Attributes, user, "", p.roleMappings)
 			if filterParamName := strings.TrimSpace(customVersion.FilterParam); filterParamName != "" {
 				var attrsToFetch = cleanup(strings.Split(strings.Join(r.URL.Query()[filterParamName], ","), ","))
 				if len(attrsToFetch) > 0 {
@@ -70,15 +76,17 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			oauth2.AddExtraClaims(claims, customVersion.FixedAttributes, oauth2.User{UserID: userID, Person: *person}, "", p.roleMappings)
+			oauth2.AddExtraClaims(claims, customVersion.FixedAttributes, user, "", p.roleMappings)
 			bytes, err = json.Marshal(claims)
 		} else if apiVersion == "v1" {
-			bytes, err = json.Marshal(person)
+			bytes, err = json.Marshal(personWithRoles{Person: *person, Roles: p.roleMappings.Roles(user)})
 		} else {
+			log.Print("!!! 400 Bad Request - unsupported version")
 			oauth2.Error(w, oauth2.ErrorInvalidRequest, "unsupported version", http.StatusBadRequest)
 			return
 		}
 		if err != nil {
+			log.Printf("!!! %v", err)
 			oauth2.Error(w, oauth2.ErrorInternal, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -89,8 +97,10 @@ func (p *peopleAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write(bytes)
 	} else {
 		if errors.Is(err, people.ErrPersonNotFound) {
+			log.Printf("!!! 404 Not Found - %v", err)
 			oauth2.Error(w, oauth2.ErrorNotFound, err.Error(), http.StatusNotFound)
 		} else {
+			log.Printf("!!! %v", err)
 			oauth2.Error(w, oauth2.ErrorInternal, err.Error(), http.StatusInternalServerError)
 		}
 	}
