@@ -30,6 +30,7 @@ type Server struct {
 	Title                   string                            `json:"title,omitempty"`
 	Users                   map[string]people.AuthenticPerson `json:"users,omitempty"`
 	Key                     string                            `json:"key"`
+	UsePSS                  bool                              `json:"use_pss"`
 	AdditionalKeys          []string                          `json:"additional_keys,omitempty"`
 	Clients                 map[string]clients.Client         `json:"clients,omitempty"`
 	ClientStore             *clients.StoreSettings            `json:"client_store,omitempty"`

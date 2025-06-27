@@ -210,6 +210,7 @@ func main() {
 		serverSettings.AccessTokenExtraClaims,
 		serverSettings.IDTokenExtraClaims,
 		serverSettings.Roles,
+		serverSettings.UsePSS,
 	)
 	if err != nil {
 		log.Fatalf("!!! %s", err)

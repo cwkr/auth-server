@@ -61,9 +61,9 @@ func (d *discoveryDocumentHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		EndSessionEndpoint:                         baseURL + "/logout",
 		ScopesSupported:                            strings.Fields(d.scope),
 		TokenEndpointAuthMethodsSupported:          []string{"client_secret_basic", "client_secret_post"},
-		TokenEndpointAuthSigningAlgValuesSupported: []string{"RS256"},
+		TokenEndpointAuthSigningAlgValuesSupported: []string{"PS256", "RS256"},
 		CodeChallengeMethodsSupported:              []string{"S256"},
-		IDTokenSigningAlgValuesSupported:           []string{"RS256"},
+		IDTokenSigningAlgValuesSupported:           []string{"PS256", "RS256"},
 		RevocationEndpoint:                         baseURL + "/revoke",
 		RevocationEndpointAuthMethodsSupported:     []string{"client_secret_basic", "client_secret_post"},
 	}

@@ -212,8 +212,12 @@ func (t tokenCreator) Verify(rawToken, tokenType string) (*VerifiedClaims, error
 func NewTokenCreator(privateKey *rsa.PrivateKey, keyID, issuer, scope string,
 	accessTokenTTL, refreshTokenTTL, idTokenTTL int64,
 	accessTokenExtraClaims, idTokenExtraClaims map[string]string,
-	roleMappings RoleMappings) (TokenCreator, error) {
-	var signer, err = jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: privateKey}, (&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", keyID))
+	roleMappings RoleMappings, usePSS bool) (TokenCreator, error) {
+	var algorithm = jose.RS256
+	if usePSS {
+		algorithm = jose.PS256
+	}
+	var signer, err = jose.NewSigner(jose.SigningKey{Algorithm: algorithm, Key: privateKey}, (&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", keyID))
 	if err != nil {
 		return nil, err
 	}
